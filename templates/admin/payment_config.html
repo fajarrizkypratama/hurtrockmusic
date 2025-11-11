@@ -1,0 +1,246 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Konfigurasi Pembayaran - Admin Dashboard{% endblock %}
+
+{% block extra_head %}
+<style>
+.config-card {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.config-card.active {
+    border-color: var(--primary-color);
+    box-shadow: 0 8px 25px rgba(255, 107, 53, 0.15);
+}
+
+.config-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.provider-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+}
+
+.sandbox-indicator {
+    background: #ffc107;
+    color: #000;
+}
+
+.production-indicator {
+    background: #28a745;
+    color: #fff;
+}
+
+.config-actions .btn {
+    margin: 0 0.25rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-orange mb-0">
+                <i class="fas fa-credit-card me-2"></i>Konfigurasi Pembayaran
+            </h2>
+            <p class="text-muted mb-0">Kelola gateway pembayaran dan konfigurasi</p>
+        </div>
+        <a href="{{ url_for('admin_create_payment_config') }}" class="btn btn-orange">
+            <i class="fas fa-plus me-2"></i>Tambah Konfigurasi
+        </a>
+    </div>
+
+    <!-- Payment Configurations -->
+    <div class="row">
+        {% for config in configurations %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card config-card h-100 {% if config.is_active %}active{% endif %}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h5 class="card-title text-capitalize mb-1">
+                                {% if config.provider == 'midtrans' %}
+                                    <i class="fas fa-mobile-alt me-2 text-info"></i>Midtrans
+                                {% elif config.provider == 'stripe' %}
+                                    <i class="fab fa-stripe me-2 text-primary"></i>Stripe
+                                {% else %}
+                                    <i class="fas fa-credit-card me-2"></i>{{ config.provider.title() }}
+                                {% endif %}
+                            </h5>
+                            <span class="provider-badge {% if config.is_sandbox %}sandbox-indicator{% else %}production-indicator{% endif %}">
+                                {% if config.is_sandbox %}Sandbox{% else %}Production{% endif %}
+                            </span>
+                        </div>
+                        <div class="text-end">
+                            {% if config.is_active %}
+                                <span class="badge bg-success">Aktif</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Nonaktif</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Configuration Details -->
+                    <div class="config-details mb-3">
+                        {% if config.provider == 'midtrans' %}
+                            <small class="d-block text-muted mb-1">
+                                <svg class="admin-svg-icon me-1" width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    <circle cx="12" cy="16" r="1" fill="currentColor"/>
+                                    <path d="M7 11V7C7 5.3 8.3 4 10 4H14C15.7 4 17 5.3 17 7V11" stroke="currentColor" stroke-width="2" fill="none"/>
+                                </svg>
+                                Client Key: {{ config.midtrans_client_key[:10] + '*****' if config.midtrans_client_key else 'Belum diatur' }}
+                            </small>
+                            <small class="d-block text-muted mb-1">
+                                <i class="fas fa-server me-1"></i>
+                                Server Key: {{ config.midtrans_server_key[:10] + '*****' if config.midtrans_server_key else 'Belum diatur' }}
+                            </small>
+                            {% if config.midtrans_merchant_id %}
+                            <small class="d-block text-muted">
+                                <i class="fas fa-store me-1"></i>
+                                Merchant ID: {{ config.midtrans_merchant_id }}
+                            </small>
+                            {% endif %}
+                        {% elif config.provider == 'stripe' %}
+                            <small class="d-block text-muted mb-1">
+                                <svg class="admin-svg-icon me-1" width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    <circle cx="12" cy="16" r="1" fill="currentColor"/>
+                                    <path d="M7 11V7C7 5.3 8.3 4 10 4H14C15.7 4 17 5.3 17 7V11" stroke="currentColor" stroke-width="2" fill="none"/>
+                                </svg>
+                                Publishable Key: {{ config.stripe_publishable_key[:10] + '*****' if config.stripe_publishable_key else 'Belum diatur' }}
+                            </small>
+                            <small class="d-block text-muted">
+                                <i class="fas fa-lock me-1"></i>
+                                Secret Key: {{ config.stripe_secret_key[:10] + '*****' if config.stripe_secret_key else 'Belum diatur' }}
+                            </small>
+                        {% endif %}
+                    </div>
+
+                    <!-- Callback URLs -->
+                    <div class="callback-urls mb-3">
+                        <small class="text-muted d-block mb-1">
+                            <strong>Callback URLs:</strong>
+                        </small>
+                        <small class="d-block text-muted">
+                            <i class="fas fa-check-circle me-1 text-success"></i>
+                            Finish: {{ config.callback_finish_url or 'Belum diatur' }}
+                        </small>
+                        <small class="d-block text-muted">
+                            <i class="fas fa-times-circle me-1 text-danger"></i>
+                            Error: {{ config.callback_error_url or 'Belum diatur' }}
+                        </small>
+                        <small class="d-block text-muted">
+                            <i class="fas fa-bell me-1 text-info"></i>
+                            Notification: {{ config.notification_url or 'Belum diatur' }}
+                        </small>
+                        {% if config.provider == 'midtrans' %}
+                        <small class="d-block text-muted">
+                            <i class="fas fa-sync-alt me-1 text-warning"></i>
+                            Recurring: {{ request.host_url.rstrip('/') }}/notification/recurring
+                        </small>
+                        <small class="d-block text-muted">
+                            <i class="fas fa-link me-1 text-primary"></i>
+                            Account Linking: {{ request.host_url.rstrip('/') }}/notification/account-linking
+                        </small>
+                        {% endif %}
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="config-actions d-flex justify-content-between">
+                        <div>
+                            <small class="text-muted d-block">
+                                Dibuat: {{ config.created_at.strftime('%d %b %Y') }}
+                            </small>
+                            {% if config.updated_at != config.created_at %}
+                            <small class="text-muted d-block">
+                                Diperbarui: {{ config.updated_at.strftime('%d %b %Y') }}
+                            </small>
+                            {% endif %}
+                            <small class="text-muted d-block">
+                                ID: {{ config.id }}
+                            </small>
+                        </div>
+                        <div>
+                            <form method="POST" action="{{ url_for('admin_toggle_payment_config', config_id=config.id) }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="btn btn-sm {% if config.is_active %}btn-warning{% else %}btn-success{% endif %}">
+                                    {% if config.is_active %}
+                                        <i class="fas fa-pause me-1"></i>Nonaktifkan
+                                    {% else %}
+                                        <i class="fas fa-play me-1"></i>Aktifkan
+                                    {% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        {% if not configurations %}
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-credit-card fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Belum Ada Konfigurasi Pembayaran</h5>
+                    <p class="text-muted mb-3">Mulai dengan menambahkan konfigurasi gateway pembayaran pertama Anda.</p>
+                    <a href="{{ url_for('admin_create_payment_config') }}" class="btn btn-orange">
+                        <i class="fas fa-plus me-2"></i>Tambah Konfigurasi Pertama
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Payment Statistics (if needed) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Informasi Sistem Pembayaran
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h4 class="text-orange mb-1">{{ configurations|selectattr('is_active')|list|length }}</h4>
+                                <small class="text-muted">Gateway Aktif</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h4 class="text-info mb-1">{{ configurations|selectattr('provider', 'equalto', 'midtrans')|list|length }}</h4>
+                                <small class="text-muted">Midtrans Config</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <h4 class="text-primary mb-1">{{ configurations|selectattr('provider', 'equalto', 'stripe')|list|length }}</h4>
+                                <small class="text-muted">Stripe Config</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-refresh page if payment status changes
+// This could be enhanced with WebSocket for real-time updates
+</script>
+{% endblock %}

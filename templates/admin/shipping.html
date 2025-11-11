@@ -1,0 +1,268 @@
+
+{% extends "admin/base.html" %}
+
+{% block title %}Kelola Jasa Kirim - Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">
+        <svg class="admin-svg-icon me-2 text-orange" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M16 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H14" stroke="currentColor" stroke-width="2" fill="none"/>
+            <path d="M16 8L20 12L16 16" stroke="currentColor" stroke-width="2" fill="none"/>
+            <path d="M20 12H9" stroke="currentColor" stroke-width="2" fill="none"/>
+        </svg>Kelola Jasa Kirim
+    </h2>
+    <button class="btn btn-orange" data-bs-toggle="modal" data-bs-target="#addServiceModal">
+        <svg class="admin-svg-icon me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+            <path d="M12 8V16M8 12H16" stroke="currentColor" stroke-width="2"/>
+        </svg>Tambah Jasa Kirim
+    </button>
+</div>
+
+<!-- Services Table -->
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Nama Jasa</th>
+                        <th>Kode</th>
+                        <th>Harga Dasar</th>
+                        <th>Per KG</th>
+                        <th>Estimasi Kirim</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for service in services %}
+                    <tr>
+                        <td>{{ service.id }}</td>
+                        <td><strong>{{ service.name }}</strong></td>
+                        <td><span class="badge bg-info">{{ service.code }}</span></td>
+                        <td>Rp {{ "{:,.0f}".format(service.base_price).replace(',', '.') }}</td>
+                        <td>Rp {{ "{:,.0f}".format(service.price_per_kg).replace(',', '.') }}</td>
+                        <td>{{ service.min_days }}-{{ service.max_days }} hari</td>
+                        <td>
+                            {% if service.is_active %}
+                                <span class="badge bg-success">Aktif</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Nonaktif</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" onclick="editService({{ service.id }})" data-bs-toggle="modal" data-bs-target="#editServiceModal">
+                                    <svg class="admin-svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M11 4H4C3.4 4 3 4.4 3 5V20C3 20.6 3.4 21 4 21H19C19.6 21 20 20.6 20 20V13" stroke="currentColor" stroke-width="2" fill="none"/>
+                                        <path d="M18.5 2.5C19.3 1.7 20.7 1.7 21.5 2.5S22.3 4.7 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    </svg>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="deleteService({{ service.id }}, '{{ service.name }}')">
+                                    <svg class="admin-svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M3 6H5H21" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M8 6V4C8 3.4 8.4 3 9 3H15C15.6 3 16 3.4 16 4V6M19 6V20C19 20.6 18.6 21 18 21H6C5.4 21 5 20.6 5 20V6H19Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Service Modal -->
+<div class="modal fade" id="addServiceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tambah Jasa Kirim Baru</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin_add_shipping_service') }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Nama Jasa Kirim *</label>
+                                <input type="text" class="form-control" name="name" required placeholder="JNE Regular">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Kode *</label>
+                                <input type="text" class="form-control" name="code" required placeholder="JNE_REG">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Harga Dasar (Rp) *</label>
+                                <input type="number" class="form-control" name="base_price" required min="0" step="1000" placeholder="10000">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Harga per KG (Rp) *</label>
+                                <input type="number" class="form-control" name="price_per_kg" required min="0" step="1000" placeholder="5000">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Harga per KM (Rp)</label>
+                                <input type="number" class="form-control" name="price_per_km" min="0" step="100" placeholder="0" value="0">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Volume Factor</label>
+                                <input type="number" class="form-control" name="volume_factor" min="1000" step="1000" placeholder="5000" value="5000">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Estimasi Minimal (hari) *</label>
+                                <input type="number" class="form-control" name="min_days" required min="1" placeholder="1" value="1">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Estimasi Maksimal (hari) *</label>
+                                <input type="number" class="form-control" name="max_days" required min="1" placeholder="3" value="3">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-orange">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Service Modal -->
+<div class="modal fade" id="editServiceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Jasa Kirim</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editServiceForm" method="POST">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Nama Jasa Kirim *</label>
+                                <input type="text" class="form-control" name="name" id="edit_name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Kode *</label>
+                                <input type="text" class="form-control" name="code" id="edit_code" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Harga Dasar (Rp) *</label>
+                                <input type="number" class="form-control" name="base_price" id="edit_base_price" required min="0" step="1000">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Harga per KG (Rp) *</label>
+                                <input type="number" class="form-control" name="price_per_kg" id="edit_price_per_kg" required min="0" step="1000">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Harga per KM (Rp)</label>
+                                <input type="number" class="form-control" name="price_per_km" id="edit_price_per_km" min="0" step="100">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Volume Factor</label>
+                                <input type="number" class="form-control" name="volume_factor" id="edit_volume_factor" min="1000" step="1000">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Estimasi Minimal (hari) *</label>
+                                <input type="number" class="form-control" name="min_days" id="edit_min_days" required min="1">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Estimasi Maksimal (hari) *</label>
+                                <input type="number" class="form-control" name="max_days" id="edit_max_days" required min="1">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="is_active" id="edit_is_active">
+                            <label class="form-check-label" for="edit_is_active">Status Aktif</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-orange">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+const services = {{ services_data | tojson }};
+
+function editService(serviceId) {
+    const service = services.find(s => s.id === serviceId);
+    if (service) {
+        document.getElementById('edit_name').value = service.name || '';
+        document.getElementById('edit_code').value = service.code || '';
+        document.getElementById('edit_base_price').value = service.base_price || 0;
+        document.getElementById('edit_price_per_kg').value = service.price_per_kg || 0;
+        document.getElementById('edit_price_per_km').value = service.price_per_km || 0;
+        document.getElementById('edit_volume_factor').value = service.volume_factor || 5000;
+        document.getElementById('edit_min_days').value = service.min_days || 1;
+        document.getElementById('edit_max_days').value = service.max_days || 3;
+        document.getElementById('edit_is_active').checked = service.is_active;
+        
+        document.getElementById('editServiceForm').action = `{{ url_for('admin_edit_shipping_service', service_id=0) }}`.replace('0', serviceId);
+    }
+}
+
+function deleteService(serviceId, serviceName) {
+    if (confirm(`Apakah Anda yakin ingin menghapus jasa kirim "${serviceName}"?`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `{{ url_for('admin_delete_shipping_service', service_id=0) }}`.replace('0', serviceId);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

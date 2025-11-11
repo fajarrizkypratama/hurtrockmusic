@@ -1,0 +1,133 @@
+.provider-card {
+    border: 2px solid #d4cdc3;
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    background: white;
+    height: 100%;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+}
+
+.provider-card:hover {
+    border-color: #e67e3f;
+    box-shadow: 0 4px 12px rgba(230, 126, 63, 0.15);
+    transform: translateY(-2px);
+}
+
+.provider-card.selected {
+    border-color: #e67e3f;
+    background: linear-gradient(135deg, #fff9f5 0%, #fef3ec 100%);
+    box-shadow: 0 6px 20px rgba(230, 126, 63, 0.25);
+}
+
+.provider-card-header {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.provider-card-header i {
+    font-size: 48px;
+    color: #6b6b6b;
+    transition: color 0.3s ease;
+}
+
+.provider-card.selected .provider-card-header i {
+    color: #e67e3f;
+}
+
+.provider-card-body {
+    text-align: center;
+    flex-grow: 1;
+}
+
+.provider-card-body h5 {
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #212529;
+}
+
+.provider-card-body p {
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+.provider-card-check {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.provider-card.selected .provider-card-check {
+    opacity: 1;
+}
+
+.provider-card-check i {
+    font-size: 28px;
+    color: #e67e3f;
+}
+
+.provider-form {
+    animation: fadeIn 0.4s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+#configFormCard {
+    animation: slideDown 0.4s ease-in-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 1000px;
+    }
+}
+
+.form-check-input:checked {
+    background-color: #e67e3f;
+    border-color: #e67e3f;
+}
+
+.form-check-input {
+    width: 3em;
+    height: 1.5em;
+    cursor: pointer;
+}
+
+#submitBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+    .provider-card {
+        min-height: 150px;
+    }
+    
+    .provider-card-header i {
+        font-size: 36px;
+    }
+    
+    .provider-card-body h5 {
+        font-size: 1rem;
+    }
+}

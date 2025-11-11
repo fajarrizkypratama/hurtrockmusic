@@ -1,0 +1,265 @@
+
+{% extends "admin/base.html" %}
+
+{% block title %}Analisis Penjualan - Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Analisis Penjualan</h2>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#customDateModal">
+            <i class="fas fa-calendar-alt me-2"></i>Export Custom Date
+        </button>
+        <div class="btn-group">
+            <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown">
+                <svg class="admin-svg-icon me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14.5 2H6C5.5 2 5 2.5 5 3V21C5 21.5 5.5 22 6 22H18C18.5 22 19 21.5 19 21V7.5L14.5 2Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <path d="M16 13H8M16 17H8M10 9H8" stroke="currentColor" stroke-width="2" fill="none"/>
+                </svg>Export Excel
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="{{ url_for('export_sales', period='daily') }}">Laporan Hari Ini</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('export_sales', period='weekly') }}">Laporan Minggu Ini (7 Hari)</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('export_sales', period='monthly') }}">Laporan Bulan Ini</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Date Range Modal -->
+<div class="modal fade" id="customDateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-white text-dark border-bottom">
+                <h5 class="modal-title">Export Custom Date Range</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="customDateForm" method="GET" action="{{ url_for('export_sales', period='custom') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="start_date" class="form-label">Tanggal Mulai</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="end_date" class="form-label">Tanggal Akhir</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" required>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Pilih rentang tanggal untuk mengekspor laporan penjualan dari website dan kasir dalam format Excel profesional.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-file-excel me-2"></i>Export Excel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6>Penjualan Hari Ini</h6>
+                        <h3>Rp {{ "{:,.0f}".format(today_sales|float).replace(',', '.') }}</h3>
+                        <small>Online: Rp {{ "{:,.0f}".format(today_online_sales|float).replace(',', '.') }}</small><br>
+                        <small>Kasir: Rp {{ "{:,.0f}".format(today_offline_sales|float).replace(',', '.') }}</small>
+                    </div>
+                    <div class="align-self-center">
+                        <svg class="admin-svg-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 3V21H21" stroke="currentColor" stroke-width="2" fill="none"/>
+                            <path d="M7 12L12 7L16 11L21 6" stroke="currentColor" stroke-width="2" fill="none"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6>Penjualan Bulan Ini</h6>
+                        <h3>Rp {{ "{:,.0f}".format(monthly_sales|float).replace(',', '.') }}</h3>
+                        <small>Online: Rp {{ "{:,.0f}".format(monthly_online_sales|float).replace(',', '.') }}</small><br>
+                        <small>Kasir: Rp {{ "{:,.0f}".format(monthly_offline_sales|float).replace(',', '.') }}</small>
+                    </div>
+                    <div class="align-self-center">
+                        <svg class="admin-svg-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="8" cy="21" r="1" stroke="currentColor" stroke-width="2" fill="none"/>
+                            <circle cx="19" cy="21" r="1" stroke="currentColor" stroke-width="2" fill="none"/>
+                            <path d="M2.05 2.05H4L6.2 12.2C6.37 13.37 7.39 14.2 8.59 14.2H19.4C20.6 14.2 21.62 13.37 21.79 12.2L23 5H5" stroke="currentColor" stroke-width="2" fill="none"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6>Penjualan Online</h6>
+                        <h3>{{ "{:.0f}".format((today_online_sales|float / today_sales|float * 100) if today_sales|float > 0 else 0) }}%</h3>
+                        <small>dari total hari ini</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-laptop fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6>Penjualan Kasir</h6>
+                        <h3>{{ "{:.0f}".format((today_offline_sales|float / today_sales|float * 100) if today_sales|float > 0 else 0) }}%</h3>
+                        <small>dari total hari ini</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-cash-register fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Penjualan Harian -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Penjualan Harian (7 Hari Terakhir)</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Total Penjualan</th>
+                                <th>Jumlah Pesanan</th>
+                                <th>Rata-rata Order</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sale in daily_sales %}
+                            <tr>
+                                <td>{{ sale.date.strftime('%d/%m/%Y') }}</td>
+                                <td><strong>Rp {{ "{:,.0f}".format(sale.total|float).replace(',', '.') }}</strong></td>
+                                <td>{{ sale.orders_count }}</td>
+                                <td>Rp {{ "{:,.0f}".format((sale.total|float / sale.orders_count|float) if sale.orders_count > 0 else 0).replace(',', '.') }}</td>
+                            </tr>
+                            {% endfor %}
+                            
+                            {% if not daily_sales %}
+                            <tr>
+                                <td colspan="4" class="text-center">Belum ada data penjualan</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Customers -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Pelanggan Terbaik</h5>
+            </div>
+            <div class="card-body">
+                {% for customer in top_customers %}
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <strong>{{ customer.name }}</strong>
+                        <small class="d-block text-muted">{{ customer.email }}</small>
+                        <small class="text-muted">{{ customer.orders_count }} pesanan</small>
+                    </div>
+                    <div class="text-end">
+                        <strong class="text-success">Rp {{ "{:,.0f}".format(customer.total_spent|float).replace(',', '.') }}</strong>
+                    </div>
+                </div>
+                <hr>
+                {% endfor %}
+                
+                {% if not top_customers %}
+                <p class="text-center text-muted">Belum ada data pelanggan</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Penjualan per Kategori -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Penjualan per Kategori</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Produk</th>
+                                <th>Total Terjual</th>
+                                <th>Online</th>
+                                <th>Kasir</th>
+                                <th>Persentase</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set total_qty = best_selling_products|sum(attribute='total_sold')|int %}
+                            {% for product in best_selling_products %}
+                            <tr>
+                                <td><strong>{{ product.name }}</strong></td>
+                                <td><span class="badge bg-success">{{ product.total_sold }}</span></td>
+                                <td><span class="badge bg-primary">{{ product.sold_online or 0 }}</span></td>
+                                <td><span class="badge bg-warning">{{ product.sold_offline or 0 }}</span></td>
+                                <td>
+                                    {% if total_qty > 0 %}
+                                    <div class="progress" style="height: 20px;">
+                                        {% set percentage = (product.total_sold|float / total_qty * 100) %}
+                                        <div class="progress-bar bg-orange" role="progressbar" 
+                                             style="width: {{ percentage }}%">
+                                            {{ "%.1f"|format(percentage) }}%
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    0%
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            
+                            {% if not category_sales %}
+                            <tr>
+                                <td colspan="4" class="text-center">Belum ada data penjualan kategori</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

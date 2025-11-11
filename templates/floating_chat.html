@@ -1,0 +1,1143 @@
+<!-- Floating Chat Widget -->
+<div id="floating-chat-container" class="floating-chat-container">
+  <!-- Chat Toggle Button -->
+  <div
+    id="chat-toggle-btn"
+    class="chat-toggle-btn"
+    onclick="toggleChatOrContactModal()"
+  >
+    <i class="fas fa-comments"></i>
+    <span id="chat-badge" class="chat-badge" style="display: none">0</span>
+  </div>
+
+  <!-- Contact Us Modal (for non-logged in users) -->
+  <div id="contact-us-modal" class="contact-modal" style="display: none">
+    <div class="contact-modal-content">
+      <div class="contact-modal-header">
+        <h3>Contact Us</h3>
+        <button onclick="closeContactModal()" class="close-contact-btn">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="contact-modal-body">
+        <p class="contact-subtitle">Please select a channel to continue:</p>
+
+        <a
+          href="{{ url_for('login') }}?next={{ url_for('index') }}"
+          class="contact-option"
+        >
+          <div class="contact-icon">
+            <i class="fas fa-comment-dots"></i>
+          </div>
+          <span>Chat</span>
+        </a>
+
+        <a
+          href="https://wa.me/{{ store_profile.whatsapp_number if store_profile and store_profile.whatsapp_number else '6282115558035' }}"
+          target="_blank"
+          class="contact-option"
+        >
+          <div class="contact-icon whatsapp">
+            <i class="fab fa-whatsapp"></i>
+          </div>
+          <span>WhatsApp</span>
+        </a>
+
+        <a
+          href="tel:{{ store_profile.store_phone if store_profile and store_profile.store_phone else '+6282115558035' }}"
+          class="contact-option"
+        >
+          <div class="contact-icon call">
+            <i class="fas fa-phone-alt"></i>
+          </div>
+          <span>Call</span>
+        </a>
+
+        <a
+          href="mailto:{{ store_profile.store_email if store_profile and store_profile.store_email else 'info@hurtrock.com' }}"
+          class="contact-option"
+        >
+          <div class="contact-icon email">
+            <i class="fas fa-envelope"></i>
+          </div>
+          <span>E-mail</span>
+        </a>
+
+        <a href="{{ url_for('store_info') }}" class="contact-option">
+          <div class="contact-icon faq">
+            <i class="fas fa-question-circle"></i>
+          </div>
+          <span>FAQ</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Window (for logged in buyers) -->
+  <div id="chat-window" class="chat-window" style="display: none">
+    <!-- Chat Header -->
+    <div class="chat-header">
+      <div class="chat-header-title">
+        <i class="fas fa-headset"></i>
+        <span>Live Chat</span>
+      </div>
+      <div class="chat-header-actions">
+        <button id="minimize-chat" onclick="toggleChat()" class="btn-minimal">
+          <i class="fas fa-minus"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Chat Messages Area -->
+    <div id="chat-messages" class="chat-messages">
+      <div class="chat-welcome-msg">
+        <div class="welcome-icon">
+          <i class="fas fa-headset"></i>
+        </div>
+        <h4>Selamat datang di Live Chat!</h4>
+        <p>
+          Silakan tanyakan ketersediaan produk atau ajukan penawaran. Tim
+          customer service kami siap membantu Anda.
+        </p>
+        <div class="connection-status" id="connection-status">
+          <i class="fas fa-spinner fa-spin"></i> Menghubungkan ke chat...
+        </div>
+      </div>
+    </div>
+
+    <!-- Typing Indicator -->
+    <div id="typing-indicator" class="typing-indicator" style="display: none">
+      <div class="typing-content">
+        <span class="typing-user"></span> sedang mengetik
+        <div class="typing-dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Product Tag Preview -->
+    <div
+      id="product-tag-preview"
+      class="product-tag-preview"
+      style="display: none"
+    >
+      <div class="tagged-product">
+        <img id="tagged-product-image" src="" alt="" />
+        <div class="tagged-product-info">
+          <h5 id="tagged-product-name"></h5>
+          <p id="tagged-product-price"></p>
+        </div>
+        <button onclick="clearProductTag()" class="clear-tag-btn">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Chat Input -->
+    <div class="chat-input-container">
+      <div class="chat-input-wrapper">
+        <input
+          type="text"
+          id="chat-message-input"
+          placeholder="Ketik pesan Anda..."
+          maxlength="2000"
+          onkeypress="handleChatKeyPress(event)"
+          oninput="handleTyping()"
+        />
+        <button
+          id="send-message-btn"
+          onclick="sendChatMessage()"
+          class="send-btn"
+        >
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+      <div class="chat-actions">
+        <button onclick="showProductSelector()" class="action-btn">
+          <i class="fas fa-tag"></i>
+          Tag Produk
+        </button>
+        <!-- Button for media upload -->
+        <button id="media-upload-btn" class="action-btn" title="Upload Media">
+          <i class="fas fa-paperclip"></i>
+          Media
+        </button>
+      </div>
+      <!-- Hidden file input for media upload -->
+      <input
+        type="file"
+        id="media-file-input"
+        accept="image/*,video/*"
+        style="display: none"
+      />
+    </div>
+  </div>
+</div>
+
+<!-- Product Selector Modal -->
+<div id="product-selector-modal" class="modal fade" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Pilih Produk</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <div class="search-box">
+          <input
+            type="text"
+            id="product-search"
+            placeholder="Cari produk..."
+            onkeyup="searchProducts()"
+          />
+        </div>
+        <div id="products-list" class="products-list">
+          <!-- Products will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Floating Chat Styles */
+  .floating-chat-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1050;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      sans-serif;
+  }
+
+  /* Contact Us Modal */
+  .contact-modal {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    left: auto;
+    animation: slideInUp 0.3s ease-out;
+  }
+
+  .contact-modal-content {
+    width: 320px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+  }
+
+  .contact-modal-header {
+    background: linear-gradient(135deg, #ff6b35, #ff8c42);
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .contact-modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  .close-contact-btn {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 4px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+
+  .close-contact-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  .contact-modal-body {
+    padding: 20px;
+  }
+
+  .contact-subtitle {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .contact-option {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #333;
+    font-weight: 500;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .contact-option:hover {
+    background: #f8f9fa;
+    border-color: #ff6b35;
+    transform: translateX(4px);
+  }
+
+  .contact-option:last-child {
+    margin-bottom: 0;
+  }
+
+  .contact-icon {
+    width: 40px;
+    height: 40px;
+    background: #f8f9fa;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #333;
+    flex-shrink: 0;
+  }
+
+  .contact-icon.whatsapp {
+    background: #25d366;
+    color: white;
+  }
+
+  .contact-icon.call {
+    background: #007bff;
+    color: white;
+  }
+
+  .contact-icon.email {
+    background: #dc3545;
+    color: white;
+  }
+
+  .contact-icon.faq {
+    background: #6c757d;
+    color: white;
+  }
+
+  .chat-toggle-btn {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #ff6b35, #ff8c42);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3);
+    transition: all 0.3s ease;
+    position: relative;
+  }
+
+  .chat-toggle-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(255, 107, 53, 0.4);
+  }
+
+  .chat-toggle-btn i {
+    color: white;
+    font-size: 24px;
+  }
+
+  .chat-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #dc3545;
+    color: white;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 12px;
+    font-weight: bold;
+    min-width: 18px;
+    text-align: center;
+  }
+
+  .chat-window {
+    width: 350px;
+    height: 500px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    position: absolute;
+    bottom: 80px;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    animation: slideInUp 0.3s ease-out;
+    max-height: calc(100vh - 120px);
+  }
+
+  @keyframes slideInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .chat-header {
+    background: linear-gradient(135deg, #ff6b35, #ff8c42);
+    color: white;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .chat-header-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+  }
+
+  .btn-minimal {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+  }
+
+  .btn-minimal:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px;
+    padding-bottom: 8px;
+    background: #f8f9fa;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+    max-height: calc(100% - 200px);
+  }
+
+  .chat-messages::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .chat-messages::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  .chat-messages::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+
+  .chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+
+  .chat-welcome-msg {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+  }
+
+  .welcome-icon {
+    font-size: 48px;
+    color: #ff6b35;
+    margin-bottom: 16px;
+  }
+
+  .welcome-icon i {
+    font-size: 48px;
+  }
+
+  .chat-welcome-msg h4 {
+    color: #333;
+    margin-bottom: 8px;
+    font-size: 18px;
+  }
+
+  .chat-welcome-msg p {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .chat-message {
+    margin-bottom: 16px;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  .chat-message.sent {
+    flex-direction: row-reverse;
+  }
+
+  .message-content {
+    max-width: 80%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .chat-message.received .message-content {
+    background: white;
+    color: #333;
+    border-bottom-left-radius: 4px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .chat-message.sent .message-content {
+    background: linear-gradient(135deg, #ff6b35, #ff8c42);
+    color: white;
+    border-bottom-right-radius: 4px;
+    font-weight: 500;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .message-meta {
+    font-size: 11px;
+    color: #888;
+    margin-top: 4px;
+    font-weight: 600;
+  }
+
+  .chat-message.sent .message-meta {
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+  }
+
+  .chat-message.received .message-meta {
+    color: #666;
+  }
+
+  /* Read indicator styles */
+  .read-indicator {
+    margin-left: 5px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 12px;
+  }
+
+  .read-indicator .fas.fa-check-double {
+    color: #3498db; /* Blue for double check */
+  }
+
+  .read-indicator .fas.fa-check {
+    color: #888; /* Grey for single check */
+  }
+
+  .product-tag {
+    background: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 8px;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .product-tag img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+  }
+
+  .product-tag-info h6 {
+    margin: 0;
+    font-size: 12px;
+    color: #333;
+  }
+
+  .product-tag-info p {
+    margin: 0;
+    font-size: 11px;
+    color: #666;
+  }
+
+  .typing-indicator {
+    padding: 8px 16px;
+    color: #666;
+    font-size: 13px;
+    font-style: italic;
+    background: white;
+    border-top: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    z-index: 9;
+  }
+
+  .typing-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .typing-dots {
+    display: flex;
+    gap: 2px;
+  }
+
+  .typing-dots span {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #666;
+    animation: typing 1.4s infinite;
+  }
+
+  .typing-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  .typing-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+
+  @keyframes typing {
+    0%,
+    60%,
+    100% {
+      transform: translateY(0);
+    }
+    30% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .product-tag-preview {
+    background: #fff3cd;
+    border-top: 1px solid #ffeaa7;
+    padding: 12px 16px;
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    z-index: 9;
+  }
+
+  .tagged-product {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .tagged-product img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 6px;
+  }
+
+  .tagged-product-info {
+    flex: 1;
+  }
+
+  .tagged-product-info h5 {
+    margin: 0;
+    font-size: 13px;
+    color: #333;
+  }
+
+  .tagged-product-info p {
+    margin: 0;
+    font-size: 12px;
+    color: #856404;
+    font-weight: 600;
+  }
+
+  .clear-tag-btn {
+    background: none;
+    border: none;
+    color: #856404;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .clear-tag-btn:hover {
+    background: rgba(133, 100, 4, 0.1);
+  }
+
+  .chat-input-container {
+    background: white;
+    border-top: 1px solid #eee;
+    padding: 12px;
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+  }
+
+  .chat-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f8f9fa;
+    border-radius: 20px;
+    padding: 4px;
+    flex-shrink: 0;
+  }
+
+  .chat-input-wrapper input {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 8px 12px;
+    background: transparent;
+    font-size: 14px;
+  }
+
+  .send-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff6b35, #ff8c42);
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .send-btn:hover {
+    transform: scale(1.05);
+  }
+
+  .send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .chat-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+  }
+
+  .action-btn {
+    background: none;
+    border: 1px solid #ddd;
+    color: #666;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+  }
+
+  .action-btn:hover {
+    background: #f8f9fa;
+    border-color: #ff6b35;
+    color: #ff6b35;
+  }
+
+  /* Product Selector Modal Styles */
+  .search-box {
+    margin-bottom: 16px;
+  }
+
+  .search-box input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+
+  .products-list {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .product-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .product-item:hover {
+    background: #f8f9fa;
+    border-color: #ff6b35;
+  }
+
+  .product-item img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 6px;
+  }
+
+  .product-item-info h6 {
+    margin: 0 0 4px 0;
+    font-size: 14px;
+    color: #333;
+  }
+
+  .product-item-info p {
+    margin: 0;
+    font-size: 13px;
+    color: #666;
+  }
+
+  .product-item-price {
+    font-weight: 600;
+    color: #ff6b35;
+  }
+
+  /* Mobile Responsive Styles */
+  @media (max-width: 768px) {
+    .floating-chat-container {
+      bottom: 16px;
+      right: 16px;
+      left: auto;
+    }
+
+    .chat-toggle-btn {
+      width: 56px;
+      height: 56px;
+    }
+
+    .chat-toggle-btn i {
+      font-size: 22px;
+    }
+
+    .contact-modal {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      right: auto;
+      width: calc(100vw - 32px);
+      max-width: 360px;
+    }
+
+    .contact-modal-content {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .chat-window {
+      position: fixed;
+      width: calc(100vw - 32px);
+      height: 450px;
+      max-height: calc(100vh - 120px);
+      max-width: 100%;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      right: auto;
+    }
+    
+    /* Ensure input stays at bottom of chat window */
+    .chat-input-container {
+      position: sticky;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      z-index: 10;
+    }
+    
+    .chat-messages {
+      max-height: calc(100% - 160px);
+      overflow-y: auto;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .floating-chat-container {
+      bottom: 12px;
+      right: 12px;
+      left: auto;
+    }
+
+    .chat-toggle-btn {
+      width: 52px;
+      height: 52px;
+    }
+
+    .contact-modal {
+      position: fixed;
+      bottom: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      right: auto;
+      width: calc(100vw - 24px);
+      max-width: 340px;
+    }
+
+    .chat-window {
+      position: fixed;
+      width: calc(100vw - 24px);
+      height: 400px;
+      max-height: calc(100vh - 100px);
+      bottom: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      right: auto;
+    }
+    
+    /* Ensure proper scrolling in mobile */
+    .chat-messages {
+      max-height: calc(100% - 140px);
+    }
+  }
+
+  /* Chat Media Styling */
+  .message-media {
+    margin: 8px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .chat-image,
+  .chat-video {
+    max-width: 250px;
+    max-height: 200px;
+    width: auto;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    object-fit: cover;
+    display: block;
+    transition: transform 0.2s ease;
+    border: 1px solid #e9ecef;
+    background: #f8f9fa;
+  }
+
+  .chat-image:hover {
+    transform: scale(1.02);
+    cursor: pointer;
+  }
+
+  .chat-video {
+    outline: none;
+  }
+
+  .chat-video:focus {
+    outline: 2px solid #ff6b35;
+    outline-offset: 2px;
+  }
+
+  /* Media error handling */
+  .message-media p {
+    margin: 0;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border: 1px dashed #dee2e6;
+    border-radius: 8px;
+    color: #6c757d;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  /* Media filename display */
+  .message-media .media-filename {
+    font-size: 11px;
+    color: #666;
+    margin-top: 4px;
+    text-align: center;
+    font-style: italic;
+    padding: 0 4px;
+  }
+
+  /* Media Confirmation Modal */
+  #media-confirmation-modal .modal-content {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  }
+
+  #media-confirmation-modal .modal-header {
+    background: linear-gradient(135deg, #ff6b35, #ff8c42);
+    color: white;
+    border-radius: 16px 16px 0 0;
+    border-bottom: none;
+    padding: 20px 24px;
+  }
+
+  #media-confirmation-modal .modal-title {
+    font-weight: 600;
+    font-size: 18px;
+  }
+
+  #media-confirmation-modal .btn-close {
+    filter: brightness(0) invert(1);
+    opacity: 0.8;
+  }
+
+  #media-confirmation-modal .btn-close:hover {
+    opacity: 1;
+  }
+
+  #media-confirmation-modal .modal-body {
+    padding: 24px;
+  }
+
+  .media-preview {
+    border: 2px dashed #e9ecef;
+    border-radius: 12px;
+    padding: 16px;
+    background: #f8f9fa;
+  }
+
+  .file-info {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 8px 12px;
+    display: inline-block;
+  }
+
+  .media-caption #media-caption-input {
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 12px 16px;
+    resize: none;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+  }
+
+  .media-caption #media-caption-input:focus {
+    border-color: #ff6b35;
+    box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25);
+  }
+
+  .media-actions .btn {
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+
+  .media-actions .btn-primary {
+    background: linear-gradient(135deg, #ff6b35, #ff8c42);
+    border: none;
+  }
+
+  .media-actions .btn-primary:hover {
+    background: linear-gradient(135deg, #e55a2b, #e57535);
+    transform: translateY(-1px);
+  }
+
+  .media-actions .btn-outline-primary {
+    border-color: #ff6b35;
+    color: #ff6b35;
+  }
+
+  .media-actions .btn-outline-primary:hover {
+    background: #ff6b35;
+    border-color: #ff6b35;
+    transform: translateY(-1px);
+  }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    .chat-window {
+      width: calc(100vw - 40px);
+      height: calc(100vh - 140px);
+      bottom: 80px;
+      right: 20px;
+    }
+
+    .contact-modal-content {
+      width: calc(100vw - 40px);
+    }
+
+    .contact-modal {
+      right: 20px !important;
+      left: auto !important;
+      margin: 20px !important;
+    }
+
+    #media-confirmation-modal .modal-dialog {
+      margin: 16px;
+      max-width: calc(100vw - 32px);
+    }
+
+    #media-confirmation-modal .modal-body {
+      padding: 16px;
+    }
+
+    .media-preview {
+      padding: 12px;
+    }
+  }
+
+  /* Connection Status */
+  .connection-status {
+    background: #d1ecf1;
+    color: #0c5460;
+    padding: 8px 16px;
+    font-size: 12px;
+    text-align: center;
+    border-bottom: 1px solid #bee5eb;
+  }
+
+  .connection-status.disconnected {
+    background: #f8d7da;
+    color: #721c24;
+    border-bottom-color: #f5c6cb;
+  }
+
+  .connection-status.connecting {
+    background: #fff3cd;
+    color: #856404;
+    border-bottom-color: #ffeaa7;
+  }
+</style>

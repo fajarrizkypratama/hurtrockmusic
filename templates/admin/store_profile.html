@@ -1,0 +1,360 @@
+
+{% extends "admin/base.html" %}
+
+{% block title %}Profil Toko - Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">
+            <svg class="admin-svg-icon me-2 text-orange" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 7V10C2 16 6 20 12 22C18 20 22 16 22 10V7L12 2Z" fill="currentColor"/>
+                <circle cx="12" cy="10" r="3" fill="#FFFFFF"/>
+                <path d="M7 15C7 13.9 9.2 13 12 13S17 13.9 17 15" stroke="#FFFFFF" stroke-width="1.5" fill="none"/>
+            </svg>Profil Toko
+        </h2>
+        <p class="text-muted mb-0">Kelola informasi toko untuk keperluan pengiriman dan branding</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-orange text-white">
+                <h5 class="mb-0">
+                    <svg class="admin-svg-icon me-2" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="2" y="3" width="20" height="14" rx="3" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <rect x="8" y="21" width="8" height="2" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <rect x="12" y="17" width="0" height="4" stroke="currentColor" stroke-width="2"/>
+                    </svg>Informasi Toko
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('admin_update_store_profile') }}" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <div class="row">
+                        <!-- Basic Store Information -->
+                        <div class="col-lg-8">
+                            <h6 class="text-orange mb-3">
+                                <svg class="admin-svg-icon me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="2" y="3" width="20" height="14" rx="3" stroke="currentColor" stroke-width="2" fill="none"/>
+                                </svg>Informasi Dasar
+                            </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="store_name" class="form-label">Nama Toko *</label>
+                                    <input type="text" class="form-control" id="store_name" name="store_name" 
+                                           value="{{ profile.store_name or 'Hurtrock Music Store' }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="store_tagline" class="form-label">Tagline</label>
+                                    <input type="text" class="form-control" id="store_tagline" name="store_tagline" 
+                                           value="{{ profile.store_tagline or 'Toko Alat Musik Terpercaya' }}" 
+                                           placeholder="Slogan toko Anda">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="store_address" class="form-label">Alamat Lengkap *</label>
+                                <textarea class="form-control" id="store_address" name="store_address" rows="3" required
+                                          placeholder="Jalan, RT/RW, Kelurahan, Kecamatan">{{ profile.store_address or '' }}</textarea>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <label for="store_city" class="form-label">Kota *</label>
+                                    <input type="text" class="form-control" id="store_city" name="store_city" 
+                                           value="{{ profile.store_city or 'Jakarta' }}" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="store_postal_code" class="form-label">Kode Pos</label>
+                                    <input type="text" class="form-control" id="store_postal_code" name="store_postal_code" 
+                                           value="{{ profile.store_postal_code or '' }}" placeholder="12345">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="store_phone" class="form-label">Telepon *</label>
+                                    <input type="text" class="form-control" id="store_phone" name="store_phone" 
+                                           value="{{ profile.store_phone or '0821-1555-8035' }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="store_email" class="form-label">Email *</label>
+                                    <input type="email" class="form-control" id="store_email" name="store_email" 
+                                           value="{{ profile.store_email or 'info@hurtrock.com' }}" required>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="store_website" class="form-label">Website</label>
+                                <input type="url" class="form-control" id="store_website" name="store_website" 
+                                       value="{{ profile.store_website or '' }}" placeholder="https://hurtrock.com">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="store_description" class="form-label">Tentang Toko</label>
+                                <textarea class="form-control" id="store_description" name="store_description" rows="4" 
+                                          placeholder="Ceritakan tentang toko musik Anda, spesialisasi, pengalaman, dan komitmen terhadap musik...">{{ profile.store_description or '' }}</textarea>
+                                <div class="form-text">Deskripsi ini akan ditampilkan di halaman tentang toko</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Logo Upload -->
+                        <div class="col-lg-4">
+                            <h6 class="text-orange mb-3">
+                                <svg class="admin-svg-icon me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    <path d="M21 15L16 10L5 21" stroke="currentColor" stroke-width="2" fill="none"/>
+                                </svg>Logo & Branding
+                            </h6>
+                            
+                            <div class="mb-3">
+                                <label for="logo" class="form-label">Logo Toko</label>
+                                <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
+                                {% if profile.logo_url %}
+                                <div class="mt-2">
+                                    <img src="{{ profile.logo_url }}" alt="Logo" class="img-thumbnail" style="max-width: 150px;">
+                                    <p class="small text-muted mt-1">Logo saat ini</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-6 mb-3">
+                                    <label for="primary_color" class="form-label">Warna Primer</label>
+                                    <input type="color" class="form-control form-control-color" id="primary_color" 
+                                           name="primary_color" value="{{ profile.primary_color or '#FF6B35' }}">
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label for="secondary_color" class="form-label">Warna Sekunder</label>
+                                    <input type="color" class="form-control form-control-color" id="secondary_color" 
+                                           name="secondary_color" value="{{ profile.secondary_color or '#FF8C42' }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <!-- Branch Information -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-orange mb-3">
+                                <svg class="admin-svg-icon me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M21 10C21 17 12 23 12 23S3 17 3 10C3 6.1 7.6 3 12 3S21 6.1 21 10Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+                                </svg>Informasi Cabang
+                            </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="branch_name" class="form-label">Nama Cabang</label>
+                                    <input type="text" class="form-control" id="branch_name" name="branch_name" 
+                                           value="{{ profile.branch_name or '' }}" placeholder="Cabang Pusat">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="branch_code" class="form-label">Kode Cabang</label>
+                                    <input type="text" class="form-control" id="branch_code" name="branch_code" 
+                                           value="{{ profile.branch_code or '' }}" placeholder="HRT-001">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="branch_manager" class="form-label">Manager Cabang</label>
+                                    <input type="text" class="form-control" id="branch_manager" name="branch_manager" 
+                                           value="{{ profile.branch_manager or '' }}" placeholder="Nama Manager">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <!-- Business Information -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-orange mb-3">
+                                <svg class="admin-svg-icon me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="2" y="5" width="20" height="14" rx="3" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    <rect x="2" y="9" width="20" height="1.5" fill="currentColor"/>
+                                    <rect x="4" y="15" width="4" height="1" rx="0.5" fill="currentColor"/>
+                                    <rect x="12" y="15" width="6" height="1" rx="0.5" fill="currentColor"/>
+                                </svg>Informasi Bisnis
+                            </h6>
+                            
+                            <div class="mb-3">
+                                <label for="business_license" class="form-label">Nomor Izin Usaha</label>
+                                <input type="text" class="form-control" id="business_license" name="business_license" 
+                                       value="{{ profile.business_license or '' }}" placeholder="NIB/SIUP">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="tax_number" class="form-label">NPWP</label>
+                                <input type="text" class="form-control" id="tax_number" name="tax_number" 
+                                       value="{{ profile.tax_number or '' }}" placeholder="XX.XXX.XXX.X-XXX.XXX">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="operating_hours" class="form-label">Jam Operasional</label>
+                                <textarea class="form-control" id="operating_hours" name="operating_hours" rows="3"
+                                          placeholder="Senin - Sabtu: 09:00 - 21:00&#10;Minggu: 10:00 - 18:00">{{ profile.operating_hours or '' }}</textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Social Media -->
+                        <div class="col-md-6">
+                            <h6 class="text-orange mb-3">
+                                <svg class="admin-svg-icon me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 2C17.5 2 22 6.5 22 12C22 17.5 17.5 22 12 22C10.3 22 8.8 21.6 7.5 20.9L2 22L3.1 16.5C2.4 15.2 2 13.7 2 12C2 6.5 6.5 2 12 2Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                                </svg>Media Sosial & Kontak
+                            </h6>
+                            
+                            <div class="mb-3">
+                                <label for="whatsapp_number" class="form-label">WhatsApp</label>
+                                <input type="text" class="form-control" id="whatsapp_number" name="whatsapp_number" 
+                                       value="{{ profile.whatsapp_number or '' }}" placeholder="6282115558035">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="facebook_url" class="form-label">Facebook</label>
+                                <input type="url" class="form-control" id="facebook_url" name="facebook_url" 
+                                       value="{{ profile.facebook_url or '' }}" placeholder="https://facebook.com/hurtrock">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="instagram_url" class="form-label">Instagram</label>
+                                <input type="url" class="form-control" id="instagram_url" name="instagram_url" 
+                                       value="{{ profile.instagram_url or '' }}" placeholder="https://instagram.com/hurtrock">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-muted">
+                            <small>
+                                <svg class="admin-svg-icon me-1" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                Terakhir diperbarui: {{ profile.updated_at.strftime('%d/%m/%Y %H:%M') if profile.updated_at else 'Belum pernah' }}
+                            </small>
+                        </div>
+                        <div>
+                            <button type="submit" class="btn btn-orange btn-lg px-4">
+                                <svg class="admin-svg-icon me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M19 21H5C4.4 21 4 20.6 4 20V4C4 3.4 4.4 3 5 3H16L20 7V20C20 20.6 19.6 21 19 21Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    <path d="M17 21V13H7V21M7 3V8H15" stroke="currentColor" stroke-width="2" fill="none"/>
+                                </svg>Simpan Profil Toko
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                    <svg class="admin-svg-icon me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 16V12M12 8H12.01" stroke="currentColor" stroke-width="2"/>
+                    </svg>Informasi Penggunaan
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0" style="font-size: 0.9rem;">
+                    <li class="mb-2">
+                        <svg class="admin-svg-icon text-success me-2" width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" fill="none"/>
+                        </svg>Data ini akan muncul di label pengiriman
+                    </li>
+                    <li class="mb-2">
+                        <svg class="admin-svg-icon text-success me-2" width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" fill="none"/>
+                        </svg>Dioptimalkan untuk thermal printer 120mm
+                    </li>
+                    <li class="mb-2">
+                        <svg class="admin-svg-icon text-success me-2" width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" fill="none"/>
+                        </svg>Alamat toko sebagai pengirim resmi
+                    </li>
+                    <li>
+                        <svg class="admin-svg-icon text-success me-2" width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" fill="none"/>
+                        </svg>Branding konsisten di semua dokumen
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                    <svg class="admin-svg-icon me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10.29 3.86L1.82 18A2 2 0 003.54 21H20.46A2 2 0 0022.18 18L13.71 3.86A2 2 0 0010.29 3.86Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M12 9V13M12 17H12.01" stroke="currentColor" stroke-width="2"/>
+                    </svg>Tips Thermal Printer
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0" style="font-size: 0.9rem;">
+                    <li class="mb-2">📏 Label optimal untuk kertas thermal 120mm</li>
+                    <li class="mb-2">🖨️ Hemat kertas dengan desain vertikal</li>
+                    <li class="mb-2">📝 Alamat otomatis terbagi per baris</li>
+                    <li>⚡ Format profesional untuk pengiriman</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Preview color changes
+    const primaryColorInput = document.getElementById('primary_color');
+    const secondaryColorInput = document.getElementById('secondary_color');
+    
+    function updateColorPreview() {
+        const primaryColor = primaryColorInput.value;
+        const secondaryColor = secondaryColorInput.value;
+        
+        // Update CSS custom properties for preview
+        document.documentElement.style.setProperty('--orange-primary', primaryColor);
+        document.documentElement.style.setProperty('--orange-secondary', secondaryColor);
+    }
+    
+    primaryColorInput.addEventListener('change', updateColorPreview);
+    secondaryColorInput.addEventListener('change', updateColorPreview);
+    
+    // Auto format phone numbers
+    const phoneInputs = document.querySelectorAll('input[type="text"][id*="phone"], input[type="text"][id*="whatsapp"]');
+    phoneInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            let value = this.value.replace(/\D/g, ''); // Remove non-digits
+            if (value.startsWith('0')) {
+                value = '62' + value.substring(1); // Convert to international format
+            }
+            if (value.length > 15) {
+                value = value.substring(0, 15); // Limit length
+            }
+            // Don't update if user is typing normally
+            if (this.id.includes('whatsapp') && !value.startsWith('62') && value.length > 0) {
+                this.value = '62' + value;
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

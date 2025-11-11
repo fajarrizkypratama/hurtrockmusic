@@ -1,0 +1,384 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Kelola Pesanan - Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Kelola Pesanan</h2>
+    <div class="badge bg-info">{{ orders|length }} Total Pesanan</div>
+</div>
+
+<!-- Search Bar -->
+<div class="card shadow mb-3">
+    <div class="card-body">
+        <div class="input-group">
+            <span class="input-group-text bg-light border-end-0">
+                <i class="fas fa-search text-muted"></i>
+            </span>
+            <input type="text" id="orderSearchInput" class="form-control border-start-0 bg-light" 
+                   placeholder="Cari pesanan berdasarkan ID, Nama, Email, atau Tracking..." autocomplete="off">
+            <button class="btn btn-outline-secondary" type="button" onclick="clearOrderSearch()">
+                <i class="fas fa-times"></i> Clear
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Pelanggan</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Tracking</th>
+                        <th>Tanggal</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td><strong>#{{ order.id }}</strong></td>
+                        <td>
+                            <div>{{ order.user.name }}</div>
+                            <small class="text-muted">{{ order.user.email }}</small>
+                        </td>
+                        <td><strong>{{ order.formatted_total }}</strong></td>
+                        <td>
+                            {% if order.status == 'paid' %}
+                                <span class="badge bg-success">Dibayar</span>
+                            {% elif order.status == 'shipped' %}
+                                <span class="badge bg-info">Dikirim</span>
+                            {% elif order.status == 'delivered' %}
+                                <span class="badge bg-primary">Diterima</span>
+                            {% elif order.status == 'cancelled' %}
+                                <span class="badge bg-danger">Dibatalkan</span>
+                            {% else %}
+                                <span class="badge bg-warning">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if order.tracking_number %}
+                                <div><strong>{{ order.tracking_number }}</strong></div>
+                                {% if order.courier_service %}
+                                <small class="text-muted">{{ order.courier_service }}</small>
+                                {% endif %}
+                            {% else %}
+                                <small class="text-muted">Belum ada</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div>{{ order.created_at.strftime('%d/%m/%Y') }}</div>
+                            <small class="text-muted">{{ order.created_at.strftime('%H:%M') }}</small>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                        data-bs-toggle="modal" data-bs-target="#orderModal{{ order.id }}">
+                                    <svg class="admin-svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M11 4H4C3.4 4 3 4.4 3 5V20C3 20.6 3.4 21 4 21H19C19.6 21 20 20.6 20 20V13" stroke="currentColor" stroke-width="2" fill="none"/>
+                                        <path d="M18.5 2.5C19.3 1.7 20.7 1.7 21.5 2.5S22.3 4.7 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    </svg> Edit
+                                </button>
+                                {% if order.status == 'paid' and not order.tracking_number %}
+                                <button type="button" class="btn btn-sm btn-outline-warning" 
+                                        data-bs-toggle="modal" data-bs-target="#quickShipModal{{ order.id }}">
+                                    <svg class="admin-svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect x="1" y="8" width="22" height="13" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                        <rect x="1" y="3" width="6" height="5" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>
+                                        <circle cx="6" cy="17" r="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                        <circle cx="18" cy="17" r="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    </svg> Kirim
+                                </button>
+                                {% endif %}
+                                <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-info" onclick="printLabel({{ order.id }})">
+                                            <svg class="admin-svg-icon me-1" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M6 9V2C6 1.4 6.4 1 7 1H17C17.6 1 18 1.4 18 2V9" stroke="currentColor" stroke-width="2" fill="none"/>
+                                                <path d="M6 18H4C3.4 18 3 17.6 3 17V11C3 10.4 3.4 10 4 10H20C20.6 10 21 10.4 21 11V17C21 17.6 20.6 18 20 18H18" stroke="currentColor" stroke-width="2" fill="none"/>
+                                                <path d="M6 14H18V22H6V14Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                                            </svg>Label Thermal
+                                        </button>
+                                        <button class="btn btn-success" onclick="printProfessionalLabel({{ order.id }})">
+                                            <svg class="admin-svg-icon me-1" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                                <rect x="7" y="7" width="3" height="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                                                <rect x="14" y="7" width="3" height="5" stroke="currentColor" stroke-width="2" fill="none"/>
+                                            </svg>Label Pro
+                                        </button>
+                                    </div>
+                                {% set has_invoice = order.invoices and order.invoices|length > 0 %}
+                                {% if not has_invoice and order.status in ['paid', 'shipped', 'delivered'] %}
+                                <form method="POST" action="{{ url_for('admin_create_invoice', order_id=order.id) }}" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-warning">
+                                        <svg class="admin-svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M14 2H6C5.4 2 4.9 2.2 4.5 2.6C4.2 2.9 4 3.4 4 4V20C4 20.6 4.2 21.1 4.6 21.4C4.9 21.8 5.4 22 6 22H18C18.6 22 19.1 21.8 19.4 21.4C19.8 21.1 20 20.6 20 20V8L14 2Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                                            <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" fill="none"/>
+                                            <path d="M12 18V12M9 15H15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                        </svg> Invoice
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                    {% if not orders %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <svg class="admin-svg-icon text-muted mb-3" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <path d="M3 12H21L18 8H6L3 12Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                            </svg>
+                            <h5 class="text-muted">Belum ada pesanan</h5>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Order Update Modals -->
+{% for order in orders %}
+<div class="modal fade" id="orderModal{{ order.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Pesanan #{{ order.id }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin_update_order', order_id=order.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="status{{ order.id }}" class="form-label">Status Pesanan</label>
+                        <select class="form-select" id="status{{ order.id }}" name="status" required>
+                            <option value="pending" {{ 'selected' if order.status == 'pending' }}>Pending</option>
+                            <option value="paid" {{ 'selected' if order.status == 'paid' }}>Dibayar</option>
+                            <option value="shipped" {{ 'selected' if order.status == 'shipped' }}>Dikirim</option>
+                            <option value="delivered" {{ 'selected' if order.status == 'delivered' }}>Diterima</option>
+                            <option value="cancelled" {{ 'selected' if order.status == 'cancelled' }}>Dibatalkan</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="tracking{{ order.id }}" class="form-label">Nomor Tracking</label>
+                        <input type="text" class="form-control" id="tracking{{ order.id }}" 
+                               name="tracking_number" value="{{ order.tracking_number or '' }}"
+                               placeholder="Masukkan nomor resi">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="courier{{ order.id }}" class="form-label">Kurir</label>
+                        <select class="form-select" id="courier{{ order.id }}" name="courier_service">
+                            <option value="">Pilih Kurir</option>
+                            <option value="JNE" {{ 'selected' if order.courier_service == 'JNE' }}>JNE</option>
+                            <option value="JNT" {{ 'selected' if order.courier_service == 'JNT' }}>J&T Express</option>
+                            <option value="SiCepat" {{ 'selected' if order.courier_service == 'SiCepat' }}>SiCepat</option>
+                            <option value="TIKI" {{ 'selected' if order.courier_service == 'TIKI' }}>TIKI</option>
+                            <option value="POS" {{ 'selected' if order.courier_service == 'POS' }}>Pos Indonesia</option>
+                            <option value="AnterAja" {{ 'selected' if order.courier_service == 'AnterAja' }}>AnterAja</option>
+                        </select>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong>Pelanggan:</strong> {{ order.user.name }}<br>
+                        <strong>Email:</strong> {{ order.user.email }}<br>
+                        {% if order.user.phone %}<strong>Telepon:</strong> {{ order.user.phone }}<br>{% endif %}
+                        {% if order.user.address %}<strong>Alamat:</strong> {{ order.user.address }}{% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <strong>Item Pesanan:</strong>
+                        <ul class="list-unstyled mt-2">
+                            {% for item in order.order_items %}
+                            <li>• {{ item.product.name }} x{{ item.quantity }} - {{ item.formatted_subtotal }}</li>
+                            {% endfor %}
+                        </ul>
+                        <strong>Total: {{ order.formatted_total }}</strong>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Update Pesanan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Quick Ship Modals -->
+{% for order in orders %}
+{% if order.status == 'paid' and not order.tracking_number %}
+<div class="modal fade" id="quickShipModal{{ order.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <svg class="admin-svg-icon me-2 text-warning" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="1" y="8" width="22" height="13" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <rect x="1" y="3" width="6" height="5" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <circle cx="6" cy="17" r="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <circle cx="18" cy="17" r="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                    </svg>
+                    Kirim Pesanan #{{ order.id }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin_quick_ship_order', order_id=order.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <strong>Pelanggan:</strong> {{ order.user.name }}<br>
+                        <strong>Total:</strong> {{ order.formatted_total }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="quickTracking{{ order.id }}" class="form-label">
+                            <svg class="admin-svg-icon me-1" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
+                            </svg>
+                            Nomor Resi *
+                        </label>
+                        <input type="text" class="form-control form-control-lg" id="quickTracking{{ order.id }}" 
+                               name="tracking_number" required placeholder="Contoh: JNE123456789"
+                               style="font-family: monospace; font-weight: bold;">
+                        <div class="form-text">Pastikan nomor resi sudah benar sebelum submit</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="quickCourier{{ order.id }}" class="form-label">
+                            <svg class="admin-svg-icon me-1" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="1" y="8" width="22" height="13" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <rect x="1" y="3" width="6" height="5" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <circle cx="6" cy="17" r="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <circle cx="18" cy="17" r="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                            </svg>
+                            Kurir
+                        </label>
+                        <select class="form-select" id="quickCourier{{ order.id }}" name="courier_service">
+                            <option value="">Pilih Kurir</option>
+                            <option value="JNE">JNE</option>
+                            <option value="JNT">J&T Express</option>
+                            <option value="SiCepat">SiCepat</option>
+                            <option value="TIKI">TIKI</option>
+                            <option value="POS">Pos Indonesia</option>
+                            <option value="AnterAja">AnterAja</option>
+                            <option value="Ninja Express">Ninja Express</option>
+                            <option value="Shopee Express">Shopee Express</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-warning">
+                        <svg class="admin-svg-icon me-1" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="1" y="8" width="22" height="13" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                            <circle cx="6" cy="17" r="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                            <circle cx="18" cy="17" r="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                        </svg>
+                        Kirim Sekarang
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+
+<script>
+// Real-time order search
+const orderSearchInput = document.getElementById('orderSearchInput');
+let orderSearchTimeout;
+
+if (orderSearchInput) {
+    orderSearchInput.addEventListener('input', function(e) {
+        clearTimeout(orderSearchTimeout);
+        const query = this.value.toLowerCase().trim();
+        
+        orderSearchTimeout = setTimeout(() => {
+            filterOrders(query);
+        }, 300);
+    });
+}
+
+function filterOrders(query) {
+    const tableRows = document.querySelectorAll('table tbody tr:not(#orderNoResultsRow)');
+    let visibleCount = 0;
+    
+    tableRows.forEach(row => {
+        if (!query) {
+            row.style.display = '';
+            visibleCount++;
+            return;
+        }
+        
+        const orderId = row.querySelector('td:nth-child(1)')?.textContent.toLowerCase() || '';
+        const customerName = row.querySelector('td:nth-child(2) div')?.textContent.toLowerCase() || '';
+        const customerEmail = row.querySelector('td:nth-child(2) small')?.textContent.toLowerCase() || '';
+        const tracking = row.querySelector('td:nth-child(5) div')?.textContent.toLowerCase() || '';
+        const total = row.querySelector('td:nth-child(3)')?.textContent.toLowerCase() || '';
+        
+        const matches = orderId.includes(query) || 
+                       customerName.includes(query) || 
+                       customerEmail.includes(query) ||
+                       tracking.includes(query) ||
+                       total.includes(query);
+        
+        row.style.display = matches ? '' : 'none';
+        if (matches) visibleCount++;
+    });
+    
+    showOrderNoResults(visibleCount, query);
+}
+
+function showOrderNoResults(count, query) {
+    let noResultsRow = document.getElementById('orderNoResultsRow');
+    
+    if (count === 0 && query.length > 0) {
+        if (!noResultsRow) {
+            const tbody = document.querySelector('table tbody');
+            noResultsRow = document.createElement('tr');
+            noResultsRow.id = 'orderNoResultsRow';
+            noResultsRow.innerHTML = `
+                <td colspan="7" class="text-center py-4">
+                    <i class="fas fa-search fa-2x text-muted mb-3"></i>
+                    <h5 class="text-muted">Tidak ada pesanan ditemukan</h5>
+                    <p class="text-muted">Coba kata kunci lain atau hapus filter</p>
+                </td>
+            `;
+            tbody.appendChild(noResultsRow);
+        }
+        noResultsRow.style.display = '';
+    } else if (noResultsRow) {
+        noResultsRow.style.display = 'none';
+    }
+}
+
+function clearOrderSearch() {
+    const input = document.getElementById('orderSearchInput');
+    if (input) {
+        input.value = '';
+        filterOrders('');
+    }
+}
+
+function printLabel(orderId) {
+    window.open(`{{ url_for('print_order_address', order_id=0) }}`.replace('0', orderId), '_blank');
+}
+
+function printProfessionalLabel(orderId) {
+    window.open(`{{ url_for('print_professional_label', order_id=0) }}`.replace('0', orderId), '_blank');
+}
+</script>
+{% endblock %}

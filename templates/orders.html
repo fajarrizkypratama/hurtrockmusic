@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title %}Pesanan Saya - Hurtrock Music Store{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">
+    <i class="fas fa-list-alt me-2 text-orange"></i>Pesanan Saya
+</h1>
+
+{% if orders %}
+<div class="row">
+    {% for order in orders %}
+    <div class="col-12 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <div class="row align-items-center">
+                    <div class="col-md-3">
+                        <h6 class="mb-0">
+                            <i class="fas fa-receipt me-2"></i>Order #{{ order.id }}
+                        </h6>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-muted">
+                            <i class="fas fa-calendar me-1"></i>
+                            {{ order.created_at.strftime('%d %b %Y, %H:%M') }}
+                        </small>
+                    </div>
+                    <div class="col-md-3">
+                        {% if order.status == 'paid' %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-check me-1"></i>Dibayar
+                            </span>
+                        {% elif order.status == 'shipped' %}
+                            <span class="badge bg-info">
+                                <i class="fas fa-truck me-1"></i>Dikirim
+                            </span>
+                        {% elif order.status == 'delivered' %}
+                            <span class="badge bg-primary">
+                                <i class="fas fa-box-check me-1"></i>Diterima
+                            </span>
+                        {% elif order.status == 'cancelled' %}
+                            <span class="badge bg-danger">
+                                <i class="fas fa-times me-1"></i>Dibatalkan
+                            </span>
+                        {% else %}
+                            <span class="badge bg-warning">
+                                <i class="fas fa-clock me-1"></i>Pending
+                            </span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <strong class="text-orange">{{ order.formatted_total }}</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for item in order.order_items %}
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-center">
+                            <img src="{{ item.product.image_url or '/static/images/placeholder.jpg' }}" 
+                                 class="rounded me-3" alt="{{ item.product.name }}"
+                                 style="width: 60px; height: 60px; object-fit: cover;"
+                                 onerror="this.src='https://via.placeholder.com/60x60/FF6B35/FFFFFF?text=P'">
+                            <div>
+                                <h6 class="mb-1">{{ item.product.name }}</h6>
+                                <small class="text-muted">
+                                    {{ item.quantity }}x @ Rp {{ "{:,.0f}".format(item.price).replace(',', '.') }}
+                                </small>
+                                <div class="fw-bold">{{ item.formatted_subtotal }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if order.status == 'paid' %}
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <strong>Pesanan sedang diproses</strong><br>
+                            <small>Pesanan Anda sedang disiapkan untuk pengiriman. Estimasi proses 1-2 hari kerja.</small>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="spinner-border text-info" role="status" style="width: 1.5rem; height: 1.5rem;">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% elif order.status == 'shipped' %}
+                <div class="alert alert-success mt-3">
+                    <i class="fas fa-truck me-2"></i>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <strong>Pesanan sudah dikirim!</strong><br>
+                            {% if order.tracking_number %}
+                            <div class="mt-2">
+                                <div class="d-flex align-items-center mb-2">
+                                    <strong class="me-2">Nomor Resi:</strong>
+                                    <span class="badge bg-dark fs-6 me-2" style="font-family: monospace; cursor: pointer;" 
+                                          onclick="copyTracking('{{ order.tracking_number }}')" 
+                                          title="Klik untuk menyalin">
+                                        {{ order.tracking_number }}
+                                    </span>
+                                    {% if order.courier_service %}
+                                    <span class="badge bg-info">{{ order.courier_service }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="progress mb-2" style="height: 6px;">
+                                    <div class="progress-bar bg-success" role="progressbar" style="width: 75%"></div>
+                                </div>
+                                <small class="text-success">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    Paket dalam perjalanan ke alamat Anda
+                                </small>
+                            </div>
+                            {% endif %}
+                            <small class="text-muted d-block mt-1">Estimasi tiba 2-5 hari kerja dari tanggal pengiriman.</small>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="text-center">
+                                <i class="fas fa-shipping-fast fa-3x text-success mb-2"></i>
+                                <div class="small text-success fw-bold">DALAM PERJALANAN</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% elif order.status == 'delivered' %}
+                <div class="alert alert-primary mt-3">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <strong>Pesanan sudah diterima</strong><br>
+                            {% if order.tracking_number %}
+                            <div class="mt-2 mb-2">
+                                <div class="d-flex align-items-center mb-2">
+                                    <strong class="me-2">Nomor Resi:</strong>
+                                    <span class="badge bg-dark me-2" style="font-family: monospace; cursor: pointer;"
+                                          onclick="copyTracking('{{ order.tracking_number }}')"
+                                          title="Klik untuk menyalin">
+                                        {{ order.tracking_number }}
+                                    </span>
+                                    {% if order.courier_service %}
+                                    <span class="badge bg-secondary">{{ order.courier_service }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="progress mb-2" style="height: 6px;">
+                                    <div class="progress-bar bg-primary" role="progressbar" style="width: 100%"></div>
+                                </div>
+                                <small class="text-primary">
+                                    <i class="fas fa-check-double me-1"></i>
+                                    Paket telah diterima di alamat tujuan
+                                </small>
+                            </div>
+                            {% endif %}
+                            <small class="text-success fw-bold">Terima kasih telah berbelanja di Hurtrock Music Store! 🎵</small>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="text-center">
+                                <i class="fas fa-check-circle fa-3x text-primary mb-2"></i>
+                                <div class="small text-primary fw-bold">DITERIMA</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="text-end mt-3">
+                    {% if order.status in ['paid', 'shipped'] %}
+                    {% if order.tracking_number %}
+                    <div class="btn-group me-2" role="group">
+                        <button class="btn btn-sm btn-outline-primary" onclick="copyTracking('{{ order.tracking_number }}')">
+                            <i class="fas fa-copy me-1"></i>Salin Resi
+                        </button>
+                        {% if order.courier_service %}
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fas fa-search-location me-1"></i>Lacak Paket
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li class="px-3 py-2">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-info-circle text-primary me-2"></i>
+                                        <div>
+                                            <small class="text-muted">Resi: </small>
+                                            <strong class="small">{{ order.tracking_number }}</strong>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                {% if order.courier_service == 'JNE' %}
+                                <li><a class="dropdown-item" href="https://www.jne.co.id/id/tracking/trace" target="_blank">
+                                    <i class="fas fa-truck me-2 text-danger"></i>JNE Official
+                                </a></li>
+                                {% elif order.courier_service == 'JNT' %}
+                                <li><a class="dropdown-item" href="https://www.jet.co.id/track" target="_blank">
+                                    <i class="fas fa-truck me-2 text-danger"></i>J&T Express
+                                </a></li>
+                                {% elif order.courier_service == 'SiCepat' %}
+                                <li><a class="dropdown-item" href="https://www.sicepat.com/checkAwb" target="_blank">
+                                    <i class="fas fa-truck me-2 text-danger"></i>SiCepat
+                                </a></li>
+                                {% elif order.courier_service == 'TIKI' %}
+                                <li><a class="dropdown-item" href="https://www.tiki.id/id/tracking" target="_blank">
+                                    <i class="fas fa-truck me-2 text-danger"></i>TIKI
+                                </a></li>
+                                {% elif order.courier_service == 'POS' %}
+                                <li><a class="dropdown-item" href="https://www.posindonesia.co.id/id/tracking" target="_blank">
+                                    <i class="fas fa-truck me-2 text-danger"></i>Pos Indonesia
+                                </a></li>
+                                {% elif order.courier_service == 'AnterAja' %}
+                                <li><a class="dropdown-item" href="https://anteraja.id/tracking" target="_blank">
+                                    <i class="fas fa-truck me-2 text-danger"></i>AnterAja
+                                </a></li>
+                                {% elif order.courier_service == 'Ninja Express' %}
+                                <li><a class="dropdown-item" href="https://www.ninjaexpress.co/id-id/tracking" target="_blank">
+                                    <i class="fas fa-truck me-2 text-danger"></i>Ninja Express
+                                </a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li class="px-3 py-1">
+                                    <small class="text-muted">Tracking Universal:</small>
+                                </li>
+                                <li><a class="dropdown-item" href="https://cekresi.com/?resi={{ order.tracking_number }}" target="_blank">
+                                    <i class="fas fa-search me-2 text-info"></i>CekResi.com
+                                </a></li>
+                                <li><a class="dropdown-item" href="https://binderkita.com/lacak-paket/{{ order.tracking_number }}" target="_blank">
+                                    <i class="fas fa-search me-2 text-info"></i>BinderKita
+                                </a></li>
+                                <li><a class="dropdown-item" href="https://packtrack.in/track?trackingNumber={{ order.tracking_number }}" target="_blank">
+                                    <i class="fas fa-search me-2 text-info"></i>PackTrack.in
+                                </a></li>
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    <a href="https://wa.me/6282115558035?text=Halo,%20saya%20ingin%20menanyakan%20status%20pesanan%20%23{{ order.id }}{% if order.tracking_number %}%20dengan%20resi%20{{ order.tracking_number }}{% endif %}" 
+                       target="_blank" class="btn btn-sm btn-success me-2">
+                        <i class="fab fa-whatsapp me-1"></i>Hubungi Kami
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('product_detail', slug=order.order_items[0].product.slug) }}" 
+                       class="btn btn-sm btn-outline-orange">
+                        <i class="fas fa-repeat me-1"></i>Beli Lagi
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination would go here if needed -->
+<div class="text-center mt-4">
+    <a href="{{ url_for('products') }}" class="btn btn-orange">
+        <i class="fas fa-shopping-bag me-2"></i>Lanjut Belanja
+    </a>
+</div>
+
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-shopping-bag fa-5x text-muted mb-3"></i>
+    <h4>Belum Ada Pesanan</h4>
+    <p class="text-muted mb-4">Anda belum melakukan pembelian apapun. Mari mulai berbelanja!</p>
+    <a href="{{ url_for('products') }}" class="btn btn-orange btn-lg">
+        <i class="fas fa-shopping-bag me-2"></i>Mulai Belanja
+    </a>
+</div>
+{% endif %}
+
+<script>
+function copyTracking(trackingNumber) {
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(trackingNumber).then(function() {
+            showToastNotification(`Nomor resi ${trackingNumber} berhasil disalin ke clipboard!`, 'success');
+        }).catch(function() {
+            fallbackCopyToClipboard(trackingNumber);
+        });
+    } else {
+        fallbackCopyToClipboard(trackingNumber);
+    }
+}
+
+function fallbackCopyToClipboard(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        document.execCommand('copy');
+        showToastNotification(`Nomor resi ${text} berhasil disalin!`, 'success');
+    } catch (err) {
+        showToastNotification('Gagal menyalin nomor resi. Silakan salin manual.', 'error');
+    }
+    
+    document.body.removeChild(textArea);
+}
+
+function showToastNotification(message, type = 'success') {
+    const toast = document.createElement('div');
+    const bgClass = type === 'success' ? 'bg-success' : 'bg-danger';
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle';
+    
+    toast.className = `toast align-items-center text-white ${bgClass} border-0 position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas ${icon} me-2"></i>${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
+    bsToast.show();
+    
+    toast.addEventListener('hidden.bs.toast', function() {
+        document.body.removeChild(toast);
+    });
+}
+</script>
+{% endblock %}

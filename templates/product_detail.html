@@ -1,0 +1,618 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.seo_title }}{% endblock %}
+
+{% block head %}
+<!-- SEO Meta Tags -->
+<meta name="description" content="{{ product.seo_description }}">
+<meta name="keywords" content="{{ product.seo_keywords }}">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="{{ request.url }}">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="product">
+<meta property="og:title" content="{{ product.name }} - {{ product.brand or '' }}">
+<meta property="og:description" content="{{ product.description[:160] if product.description else (product.name + ' dari ' + (product.brand or '') + ' tersedia di Hurtrock Music Store.') }}">
+<meta property="og:image" content="{{ request.url_root }}{{ product.image_url.lstrip('/') if product.image_url else 'static/images/placeholder.jpg' }}">
+<meta property="og:url" content="{{ request.url }}">
+<meta property="og:site_name" content="Hurtrock Music Store">
+<meta property="product:price:amount" content="{{ product.price }}">
+<meta property="product:price:currency" content="IDR">
+<meta property="product:availability" content="{% if product.stock_quantity > 0 %}in stock{% else %}out of stock{% endif %}">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ product.name }} - {{ product.brand or '' }}">
+<meta name="twitter:description" content="{{ product.description[:160] if product.description else (product.name + ' dari ' + (product.brand or '') + ' tersedia di Hurtrock Music Store.') }}">
+<meta name="twitter:image" content="{{ request.url_root }}{{ product.image_url.lstrip('/') if product.image_url else 'static/images/placeholder.jpg' }}">
+
+<!-- Structured Data (JSON-LD) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "Product",
+  "name": "{{ product.name }}",
+  "image": [
+    "{{ request.url_root }}{{ product.image_url.lstrip('/') if product.image_url else 'static/images/placeholder.jpg' }}"
+    {% if product.images %}
+    {% for image in product.images %}
+    ,"{{ request.url_root }}{{ image.image_url.lstrip('/') }}"
+    {% endfor %}
+    {% endif %}
+  ],
+  "description": "{{ product.description if product.description else (product.name + ' dari ' + (product.brand or '') + ' tersedia di Hurtrock Music Store dengan kualitas terjamin.') }}",
+  "sku": "{{ product.id }}",
+  "mpn": "{{ product.model or product.id }}",
+  "brand": {
+    "@type": "Brand",
+    "name": "{{ product.brand or 'Hurtrock Music Store' }}"
+  },
+  "category": "{{ product.category.name if product.category else 'Musical Instruments' }}",
+  "offers": {
+    "@type": "Offer",
+    "url": "{{ request.url }}",
+    "priceCurrency": "IDR",
+    "price": "{{ product.price }}",
+    "priceValidUntil": "{{ valid_until }}",
+    "itemCondition": "https://schema.org/NewCondition",
+    "availability": "{% if product.stock_quantity > 0 %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}",
+    "seller": {
+      "@type": "Organization",
+      "name": "Hurtrock Music Store",
+      "url": "{{ request.url_root }}"
+    }
+  },
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.5",
+    "reviewCount": "{{ product.stock_quantity * 2 + 10 }}"
+  }
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1400px; margin: 30px auto; padding: 0 20px;">
+    <div class="row">
+        <div class="col-lg-6">
+        <div class="product-image-container">
+            <!-- Main Image Display with Carousel -->
+            <div id="mainImageContainer" class="mb-3 position-relative">
+                <img id="mainImage" 
+                     src="{{ product.image_url or '/static/images/placeholder.jpg' }}" 
+                     class="img-fluid rounded shadow-lg w-100" alt="{{ product.name }}"
+                     onerror="this.src='https://via.placeholder.com/500x400/FF6B35/FFFFFF?text={{ product.name[:15] }}'">
+                
+                <!-- Carousel Navigation Arrows -->
+                <div class="carousel-nav">
+                    <button id="prevBtn" class="carousel-btn carousel-btn-prev" onclick="previousImage()">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button id="nextBtn" class="carousel-btn carousel-btn-next" onclick="nextImage()">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                
+                <!-- Image Counter -->
+                <div class="image-counter">
+                    <span id="imageCounter">1 / {{ (product.images|length + 1) if product.images else 1 }}</span>
+                </div>
+            </div>
+            
+            <!-- Image Gallery Thumbnails -->
+            <div class="product-image-gallery">
+                <div class="row g-2">
+                    <!-- Always show main product image first -->
+                    <div class="col-2">
+                        <div class="gallery-thumb-container">
+                            <img src="{{ product.image_url or '/static/images/placeholder.jpg' }}" 
+                                 class="gallery-thumb active" 
+                                 alt="Main Image"
+                                 data-image-index="0"
+                                 onclick="changeToImage(0)"
+                                 onerror="this.src='https://via.placeholder.com/80x80/FF6B35/FFFFFF?text=?'">
+                        </div>
+                    </div>
+                    
+                    <!-- Additional ProductImage entries sorted by orientation -->
+                    {% if product.images %}
+                    {% set sorted_images = product.images | sort(attribute='display_order') %}
+                    {% for image in sorted_images %}
+                        {% if image.image_url != product.image_url %}
+                        <div class="col-2">
+                            <div class="gallery-thumb-container">
+                                <img src="{{ image.image_url }}" 
+                                     class="gallery-thumb" 
+                                     alt="Product Image {{ loop.index }}"
+                                     data-image-index="{{ loop.index }}"
+                                     onclick="changeToImage({{ loop.index }})"
+                                     onerror="this.src='https://via.placeholder.com/100x100/FF6B35/FFFFFF?text={{ loop.index }}'">
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="product-details">
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb" style="background-color: var(--beige-secondary); padding: 12px 16px; border-radius: 6px;">
+                    <li class="breadcrumb-item"><a href="{{ url_for('index') }}" style="color: var(--orange-primary); text-decoration: none;">Beranda</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('products') }}" style="color: var(--orange-primary); text-decoration: none;">Produk</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('products', category=product.category_id) }}" style="color: var(--orange-primary); text-decoration: none;">{{ product.category.name }}</a></li>
+                    <li class="breadcrumb-item active" style="color: var(--text-dark); font-weight: 600;">{{ product.name }}</li>
+                </ol>
+            </nav>
+            
+            <h1 class="h2 mb-3">{{ product.name }}{% if product.brand %} - {{ product.brand }}{% endif %}</h1>
+            
+            {% if product.brand or product.model %}
+            <p class="text-muted mb-3">
+                {% if product.brand %}<strong>Brand:</strong> {{ product.brand }}{% endif %}
+                {% if product.model %} | <strong>Model:</strong> {{ product.model }}{% endif %}
+            </p>
+            {% endif %}
+            
+            <div class="price-section mb-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <span class="price-tag display-6 fw-bold text-orange">{{ product.formatted_price }}</span>
+                    {% if product.stock_quantity > 0 %}
+                        <div class="stock-badge-large">
+                            <i class="fas fa-box-open me-2"></i>
+                            <span class="stock-label">Stok:</span>
+                            <span class="stock-number">{{ product.stock_quantity }}</span>
+                            <span class="stock-unit">unit</span>
+                        </div>
+                    {% else %}
+                        <span class="badge bg-danger py-2 px-3" style="font-size: 1rem;">
+                            <i class="fas fa-times-circle me-1"></i>Stok Habis
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if product.description %}
+            <div class="description mb-4">
+                <h5>Deskripsi Produk</h5>
+                <p>{{ product.description }}</p>
+            </div>
+            {% endif %}
+            
+            {% if current_user.is_authenticated and product.stock_quantity > 0 %}
+            <form method="POST" action="{{ url_for('add_to_cart', product_id=product.id) }}" class="mb-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="purchase-section p-4 bg-light rounded">
+                    <div class="row align-items-end g-3">
+                        <div class="col-md-4">
+                            <label for="quantity" class="form-label fw-bold">
+                                <i class="fas fa-shopping-basket me-1 text-orange"></i>Jumlah
+                            </label>
+                            <div class="quantity-control">
+                                <div class="input-group input-group-lg">
+                                    <button type="button" class="btn btn-outline-secondary decrease">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <input type="number" id="quantity" name="quantity" value="1" 
+                                           min="1" max="{{ product.stock_quantity }}" class="form-control text-center fw-bold">
+                                    <button type="button" class="btn btn-outline-secondary increase">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted d-block mt-1">
+                                    <i class="fas fa-info-circle"></i> Maksimal {{ product.stock_quantity }} unit tersedia
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <button type="submit" class="btn btn-orange btn-lg w-100 shadow">
+                                <i class="fas fa-cart-plus me-2"></i>Tambah ke Keranjang
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            {% elif not current_user.is_authenticated %}
+            <div class="alert alert-info py-3">
+                <i class="fas fa-info-circle me-2"></i>
+                <a href="{{ url_for('login') }}" class="alert-link fw-bold">Login</a> untuk menambahkan produk ke keranjang
+            </div>
+            {% endif %}
+            
+            <div class="product-features">
+                <h6>Keunggulan Hurtrock Music Store:</h6>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-shield-alt text-orange me-2"></i>Garansi resmi</li>
+                    <li><i class="fas fa-shipping-fast text-orange me-2"></i>Pengiriman cepat & aman</li>
+                    <li><i class="fas fa-tools text-orange me-2"></i>Service center terpercaya</li>
+                    <li><i class="fas fa-headset text-orange me-2"></i>Customer support 24/7</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Related Products -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h4 class="mb-4" style="color: var(--text-dark); font-weight: 600;">
+                <i class="fas fa-layer-group text-orange me-2"></i>Produk Serupa
+            </h4>
+            <div class="row">
+                {% set related_products = [] %}
+                {% for p in product.category.products if p.id != product.id and p.is_active %}
+                    {% if related_products.append(p) %}{% endif %}
+                {% endfor %}
+                
+                {% if related_products|length > 0 %}
+                    {% for related in related_products[:4] %}
+                    <div class="col-md-3 mb-4">
+                        <div class="card h-100 product-card" onclick="window.location.href='{{ url_for('product_detail', slug=related.slug) }}'" style="cursor: pointer;">
+                            <div class="product-card-img-container">
+                                <img src="{{ related.image_url or '/static/images/placeholder.jpg' }}" 
+                                     class="product-img-main" alt="{{ related.name }}"
+                                     onerror="this.src='https://via.placeholder.com/250x250/FF6B35/FFFFFF?text={{ related.name[:15] }}'">
+                                {% if related.images and related.images|length > 0 %}
+                                <img src="{{ related.images[-1].image_url }}" 
+                                     class="product-img-hover" alt="{{ related.name }}"
+                                     onerror="this.src='{{ related.image_url or '/static/images/placeholder.jpg' }}'">
+                                {% endif %}
+                            </div>
+                            <div class="card-body">
+                                <h6 class="card-title" style="color: var(--text-dark); font-weight: 600; font-size: 14px;">{{ related.name }}</h6>
+                                <p class="small mb-2" style="color: var(--orange-primary); font-weight: 500;">
+                                    <i class="fas fa-tag" style="font-size: 11px;"></i> {{ related.category.name }}
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="h6 mb-0" style="color: var(--orange-primary); font-weight: 700;">{{ related.formatted_price }}</span>
+                                    {% if related.stock_quantity > 0 %}
+                                    <span class="badge bg-success" style="font-size: 10px;">Tersedia</span>
+                                    {% else %}
+                                    <span class="badge bg-danger" style="font-size: 10px;">Habis</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-md-3 mb-4">
+                        <div class="card product-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-music fa-3x mb-3" style="color: var(--orange-primary);"></i>
+                                <h6 style="color: var(--text-dark);">Lihat Produk Lainnya</h6>
+                                <a href="{{ url_for('products', category=product.category_id) }}" class="btn btn-outline-orange">
+                                    Kategori {{ product.category.name }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.product-image-gallery {
+    max-width: 100%;
+}
+
+.gallery-thumb-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.gallery-thumb {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 6px;
+    aspect-ratio: 1;
+}
+
+.gallery-thumb:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.gallery-thumb-container:hover {
+    border-color: #FF6B35;
+}
+
+.gallery-thumb.active {
+    border-color: #FF6B35 !important;
+    box-shadow: 0 0 0 2px #FF6B35;
+}
+
+.gallery-thumb-container.active {
+    border-color: #FF6B35;
+}
+
+#mainImageContainer {
+    position: relative;
+}
+
+#mainImage {
+    transition: all 0.3s ease;
+    width: 100%;
+    height: 500px;
+    object-fit: cover;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+/* Carousel Navigation Styles */
+.carousel-nav {
+    position: absolute;
+    top: 50%;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 10px;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.carousel-btn {
+    background: rgba(0, 0, 0, 0.6);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    pointer-events: all;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(-50%);
+}
+
+.carousel-btn:hover {
+    background: rgba(255, 107, 53, 0.9);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.carousel-btn:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.carousel-btn:disabled {
+    background: rgba(0, 0, 0, 0.3);
+    cursor: not-allowed;
+}
+
+.carousel-btn:disabled:hover {
+    background: rgba(0, 0, 0, 0.3);
+    transform: translateY(-50%);
+}
+
+/* Image Counter */
+.image-counter {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 10;
+}
+
+.stock-info {
+    display: block;        /* pastikan berada di blok baru */
+    margin-top: 10px;      /* beri jarak atas */
+    margin-bottom: 10px;   /* beri jarak bawah */
+    font-size: 1rem;       /* ukuran teks sesuai */
+}
+
+.product-details .stock-info {
+    position: static;      /* pastikan tidak 'absolute' */
+}
+
+@media (max-width: 768px) {
+    .gallery-thumb {
+        height: 80px;
+    }
+    
+    #mainImage {
+        height: 400px;
+    }
+    
+    .carousel-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 14px;
+    }
+    
+    .image-counter {
+        bottom: 10px;
+        right: 10px;
+        padding: 3px 8px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 576px) {
+    .carousel-nav {
+        padding: 0 5px;
+    }
+    
+    .carousel-btn {
+        width: 30px;
+        height: 30px;
+        font-size: 12px;
+    }
+}
+</style>
+
+<script>
+// Product image carousel functionality
+let currentImageIndex = 0;
+let productImages = [];
+
+// Build images array from product data
+{% set all_images = [] %}
+{% if product.image_url %}
+    {% set _ = all_images.append(product.image_url) %}
+{% endif %}
+{% if product.images %}
+    {% for image in product.images %}
+        {% if image.image_url != product.image_url %}
+            {% set _ = all_images.append(image.image_url) %}
+        {% endif %}
+    {% endfor %}
+{% endif %}
+
+// JavaScript array of all product images
+productImages = [
+    {% for image_url in all_images %}
+    '{{ image_url }}'{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+
+function changeToImage(index) {
+    if (index >= 0 && index < productImages.length) {
+        currentImageIndex = index;
+        updateMainImage();
+        updateThumbnailActive();
+        updateCarouselButtons();
+        updateImageCounter();
+    }
+}
+
+function previousImage() {
+    if (currentImageIndex > 0) {
+        changeToImage(currentImageIndex - 1);
+    }
+}
+
+function nextImage() {
+    if (currentImageIndex < productImages.length - 1) {
+        changeToImage(currentImageIndex + 1);
+    }
+}
+
+function updateMainImage() {
+    const mainImage = document.getElementById('mainImage');
+    
+    // Add fade effect
+    mainImage.style.opacity = '0.5';
+    
+    setTimeout(() => {
+        mainImage.src = productImages[currentImageIndex];
+        mainImage.style.opacity = '1';
+    }, 150);
+}
+
+function updateThumbnailActive() {
+    const allThumbs = document.querySelectorAll('.gallery-thumb');
+    
+    allThumbs.forEach((thumb, index) => {
+        thumb.classList.remove('active');
+        thumb.parentElement.classList.remove('active');
+        
+        if (index === currentImageIndex) {
+            thumb.classList.add('active');
+            thumb.parentElement.classList.add('active');
+        }
+    });
+}
+
+function updateCarouselButtons() {
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    
+    if (prevBtn) {
+        prevBtn.disabled = currentImageIndex <= 0;
+    }
+    
+    if (nextBtn) {
+        nextBtn.disabled = currentImageIndex >= productImages.length - 1;
+    }
+}
+
+function updateImageCounter() {
+    const counter = document.getElementById('imageCounter');
+    if (counter) {
+        counter.textContent = `${currentImageIndex + 1} / ${productImages.length}`;
+    }
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        previousImage();
+    } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        nextImage();
+    }
+});
+
+// Click on main image to go to next
+document.addEventListener('DOMContentLoaded', function() {
+    const mainImage = document.getElementById('mainImage');
+    if (mainImage) {
+        mainImage.addEventListener('click', function() {
+            nextImage();
+        });
+    }
+});
+
+// Quantity controls
+document.querySelectorAll('.decrease').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const input = this.nextElementSibling;
+        if (parseInt(input.value) > 1) {
+            input.value = parseInt(input.value) - 1;
+        }
+    });
+});
+
+document.querySelectorAll('.increase').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const input = this.previousElementSibling;
+        const max = parseInt(input.getAttribute('max'));
+        if (parseInt(input.value) < max) {
+            input.value = parseInt(input.value) + 1;
+        }
+    });
+});
+
+// Initialize carousel on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Set initial state
+    updateCarouselButtons();
+    updateImageCounter();
+    
+    // Set first thumbnail as active by default
+    const firstThumb = document.querySelector('.gallery-thumb');
+    if (firstThumb) {
+        firstThumb.classList.add('active');
+        firstThumb.parentElement.classList.add('active');
+    }
+    
+    // Hide carousel buttons if only one image
+    if (productImages.length <= 1) {
+        const carouselNav = document.querySelector('.carousel-nav');
+        if (carouselNav) {
+            carouselNav.style.display = 'none';
+        }
+    }
+});
+</script>
+{% endblock %}

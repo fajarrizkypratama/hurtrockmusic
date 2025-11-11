@@ -1,0 +1,481 @@
+{% extends "base.html" %}
+
+{% block title %}{% if current_category %}{{ categories|selectattr('id', 'equalto', current_category)|first }}{% if categories|selectattr('id', 'equalto', current_category)|first %} - {% endif %}{% endif %}Produk Alat Musik{% if search_query %} "{{ search_query }}"{% endif %} - Hurtrock Music Store{% endblock %}
+
+{% block description %}{% if current_category %}{% set selected_category = categories|selectattr('id', 'equalto', current_category)|first %}Jelajahi koleksi {{ selected_category.name if selected_category else 'alat musik' }} terbaik di Hurtrock Music Store.{% else %}Katalog lengkap alat musik rock & metal di Hurtrock Music Store.{% endif %} Gitar, bass, drum, keyboard berkualitas dengan harga terbaik.{% endblock %}
+
+{% block keywords %}{% if current_category %}{% set selected_category = categories|selectattr('id', 'equalto', current_category)|first %}{{ selected_category.name if selected_category else '' }}, {% endif %}produk alat musik, katalog musik{% if search_query %}, {{ search_query }}{% endif %}, toko musik, hurtrock{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width: 1400px; margin: 30px auto; padding: 0 20px;">
+    <h1 class="mb-4">Produk Musik</h1>
+
+    <!-- Search and Filter -->
+    <div class="row mb-4">
+    <div class="col-md-8">
+        <div class="position-relative">
+            <div class="input-group">
+                <input type="text" 
+                       id="product-search-input" 
+                       class="form-control" 
+                       placeholder="Cari produk..." 
+                       value="{{ search_query }}"
+                       autocomplete="off">
+                <span class="input-group-text bg-orange text-white">
+                    <i class="fas fa-search"></i>
+                </span>
+            </div>
+            <!-- Search Results Dropdown -->
+            <div id="search-results-dropdown" class="position-absolute w-100 bg-white border rounded-bottom shadow-lg" style="top: 100%; z-index: 1050; display: none; max-height: 400px; overflow-y: auto;">
+                <div class="p-3 text-center text-muted" id="search-loading" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i> Mencari produk...
+                </div>
+                <div id="search-results-list"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <select class="form-select" onchange="filterByCategory(this.value)" id="category-filter">
+            <option value="">Semua Kategori</option>
+            {% for category in categories %}
+            <option value="{{ category.id }}" {% if current_category == category.id %}selected{% endif %}>
+                {{ category.name }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+    <!-- Products Grid -->
+    <div class="row">
+    {% for product in products %}
+    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+        <div class="card product-card h-100 product-card-clickable" onclick="window.location.href='{{ url_for('product_detail', slug=product.slug) }}'" style="cursor: pointer;">
+            <div class="product-card-img-container">
+                <img src="{{ product.image_url or '/static/images/placeholder.jpg' }}" 
+                     class="product-img-main" alt="{{ product.name }}"
+                     onerror="this.src='https://via.placeholder.com/250x250/FF6B35/FFFFFF?text={{ product.name[:15] }}'">
+                {% if product.images and product.images|length > 0 %}
+                <img src="{{ product.images[-1].image_url }}" 
+                     class="product-img-hover" alt="{{ product.name }}"
+                     onerror="this.src='{{ product.image_url or '/static/images/placeholder.jpg' }}'">
+                {% endif %}
+            </div>
+            <div class="card-body d-flex flex-column">
+                <h6 class="card-title">{{ product.name }}</h6>
+                <p class="card-text small text-muted flex-grow-1">{{ product.description[:80] }}...</p>
+                <div class="mt-auto">
+                    <div class="price-tag fw-bold text-orange mb-2">{{ product.formatted_price }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+    {% if not products %}
+    <div class="text-center py-5">
+        <h4>Tidak ada produk ditemukan</h4>
+        <p class="text-muted">Coba kata kunci lain atau jelajahi kategori berbeda.</p>
+    </div>
+    {% endif %}
+
+    <!-- Related Products Section -->
+    {% if related_products and related_products|length > 0 %}
+    <div class="row mt-5 mb-4">
+        <div class="col-12">
+            <h2 class="mb-4 text-center">Produk Serupa</h2>
+            <div class="row">
+                {% for product in related_products %}
+                <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                    <div class="card product-card h-100 product-card-clickable" onclick="window.location.href='{{ url_for('product_detail', slug=product.slug) }}'" style="cursor: pointer;">
+                        <div class="product-card-img-container">
+                            <img src="{{ product.image_url or '/static/images/placeholder.jpg' }}" 
+                                 class="product-img-main" alt="{{ product.name }}"
+                                 onerror="this.src='https://via.placeholder.com/250x250/FF6B35/FFFFFF?text={{ product.name[:15] }}'">
+                            {% if product.images and product.images|length > 0 %}
+                            <img src="{{ product.images[-1].image_url }}" 
+                                 class="product-img-hover" alt="{{ product.name }}"
+                                 onerror="this.src='{{ product.image_url or '/static/images/placeholder.jpg' }}'">
+                            {% endif %}
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <h6 class="card-title">{{ product.name }}</h6>
+                            <p class="card-text small text-muted flex-grow-1">{{ product.description[:80] }}...</p>
+                            <div class="mt-auto">
+                                <div class="price-tag fw-bold text-orange mb-2">{{ product.formatted_price }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+let searchTimeout;
+let currentSearchQuery = '';
+let isSearching = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('product-search-input');
+    const searchResults = document.getElementById('search-results-dropdown');
+    const searchResultsList = document.getElementById('search-results-list');
+    const searchLoading = document.getElementById('search-loading');
+    const categoryFilter = document.getElementById('category-filter');
+
+    // Real-time search functionality
+    searchInput.addEventListener('input', function(e) {
+        const query = e.target.value.trim();
+        const categoryId = categoryFilter.value;
+
+        clearTimeout(searchTimeout);
+
+        if (query.length < 2) {
+            hideSearchResults();
+            return;
+        }
+
+        if (query === currentSearchQuery) return;
+        currentSearchQuery = query;
+
+        showSearchLoading();
+
+        searchTimeout = setTimeout(() => {
+            performSearch(query, categoryId);
+        }, 300);
+    });
+
+    // Handle keyboard navigation
+    searchInput.addEventListener('keydown', function(e) {
+        const items = searchResultsList.querySelectorAll('.search-result-item');
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            navigateResults(items, 'down');
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            navigateResults(items, 'up');
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            const activeItem = searchResultsList.querySelector('.search-result-item.active');
+            if (activeItem) {
+                activeItem.click();
+            } else if (currentSearchQuery) {
+                // Redirect to products page with search
+                redirectToProductsPage(currentSearchQuery, categoryFilter.value);
+            }
+        } else if (e.key === 'Escape') {
+            hideSearchResults();
+            searchInput.blur();
+        }
+    });
+
+    // Hide results when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+            hideSearchResults();
+        }
+    });
+
+    // Show results when input is focused and has content
+    searchInput.addEventListener('focus', function() {
+        if (this.value.trim().length >= 2 && searchResultsList.children.length > 0) {
+            searchResults.style.display = 'block';
+        }
+    });
+
+    // Category filter change
+    categoryFilter.addEventListener('change', function() {
+        const query = searchInput.value.trim();
+        if (query.length >= 2) {
+            performSearch(query, this.value);
+        } else {
+            filterByCategory(this.value);
+        }
+    });
+});
+
+function showSearchLoading() {
+    document.getElementById('search-loading').style.display = 'block';
+    document.getElementById('search-results-list').innerHTML = '';
+    document.getElementById('search-results-dropdown').style.display = 'block';
+}
+
+function hideSearchResults() {
+    document.getElementById('search-results-dropdown').style.display = 'none';
+    document.getElementById('search-loading').style.display = 'none';
+}
+
+function performSearch(query, categoryId = '') {
+    if (isSearching) return;
+    isSearching = true;
+
+    let searchUrl = `/search?q=${encodeURIComponent(query)}`;
+    if (categoryId) {
+        searchUrl += `&category=${categoryId}`;
+    }
+
+    fetch(searchUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            displaySearchResults(data, query, categoryId);
+        })
+        .catch(error => {
+            console.error('Search error:', error);
+            showSearchError();
+        })
+        .finally(() => {
+            isSearching = false;
+            document.getElementById('search-loading').style.display = 'none';
+        });
+}
+
+function displaySearchResults(products, query, categoryId) {
+    const searchResultsList = document.getElementById('search-results-list');
+    const searchResults = document.getElementById('search-results-dropdown');
+
+    if (!products || products.length === 0) {
+        searchResultsList.innerHTML = `
+            <div class="p-3 text-center text-muted">
+                <i class="fas fa-search mb-2"></i>
+                <div>Tidak ada produk ditemukan untuk "${query}"</div>
+                <small class="text-muted">Coba kata kunci lain</small>
+            </div>
+        `;
+        searchResults.style.display = 'block';
+        return;
+    }
+
+    const resultsHTML = products.map(product => `
+        <div class="search-result-item p-3 border-bottom cursor-pointer" 
+             onclick="window.location.href='/produk/${product.id}'"
+             style="cursor: pointer;"
+             onmouseover="this.classList.add('bg-light')"
+             onmouseout="this.classList.remove('bg-light')">
+            <div class="d-flex align-items-center">
+                <img src="${product.image_url || '/static/images/placeholder.jpg'}" 
+                     alt="${product.name}" 
+                     class="rounded me-3"
+                     style="width: 50px; height: 50px; object-fit: cover;"
+                     onerror="this.src='/static/images/placeholder.jpg'">
+                <div class="flex-grow-1">
+                    <div class="fw-bold text-dark">${escapeHtml(product.name)}</div>
+                    ${product.brand ? `<div class="text-muted small">${escapeHtml(product.brand)}</div>` : ''}
+                    <div class="text-orange fw-bold">Rp ${parseFloat(product.price).toLocaleString('id-ID')}</div>
+                </div>
+                <div class="text-muted small">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    // Add "View All Results" option
+    const viewAllHTML = `
+        <div class="search-result-item p-3 bg-light text-center cursor-pointer border-top"
+             onclick="redirectToProductsPage('${escapeHtml(query)}', '${categoryId}')"
+             style="cursor: pointer;"
+             onmouseover="this.style.backgroundColor='#e9ecef'"
+             onmouseout="this.style.backgroundColor='#f8f9fa'">
+            <i class="fas fa-list me-2"></i>
+            <strong>Lihat semua hasil pencarian (${products.length})</strong>
+        </div>
+    `;
+
+    searchResultsList.innerHTML = resultsHTML + viewAllHTML;
+    searchResults.style.display = 'block';
+}
+
+function showSearchError() {
+    const searchResultsList = document.getElementById('search-results-list');
+    searchResultsList.innerHTML = `
+        <div class="p-3 text-center text-danger">
+            <i class="fas fa-exclamation-triangle mb-2"></i>
+            <div>Terjadi kesalahan saat mencari</div>
+            <small>Silakan coba lagi</small>
+        </div>
+    `;
+    document.getElementById('search-results-dropdown').style.display = 'block';
+}
+
+function navigateResults(items, direction) {
+    const activeItem = Array.from(items).find(item => item.classList.contains('active'));
+
+    if (activeItem) {
+        activeItem.classList.remove('active');
+    }
+
+    let nextIndex = 0;
+    if (activeItem) {
+        const currentIndex = Array.from(items).indexOf(activeItem);
+        if (direction === 'down') {
+            nextIndex = (currentIndex + 1) % items.length;
+        } else {
+            nextIndex = (currentIndex - 1 + items.length) % items.length;
+        }
+    }
+
+    if (items[nextIndex]) {
+        items[nextIndex].classList.add('active');
+        items[nextIndex].scrollIntoView({ block: 'nearest' });
+    }
+}
+
+function redirectToProductsPage(query, categoryId) {
+    let url = '{{ url_for("products") }}';
+    const params = new URLSearchParams();
+
+    if (query) params.append('search', query);
+    if (categoryId) params.append('category', categoryId);
+
+    if (params.toString()) {
+        url += '?' + params.toString();
+    }
+
+    window.location.href = url;
+}
+
+function filterByCategory(categoryId) {
+    const query = document.getElementById('product-search-input').value.trim();
+
+    if (query) {
+        redirectToProductsPage(query, categoryId);
+    } else {
+        window.location.href = categoryId ? '{{ url_for("products") }}?category=' + categoryId : '{{ url_for("products") }}';
+    }
+}
+
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+</script>
+
+<style>
+.search-result-item.active {
+    background-color: #f8f9fa !important;
+}
+
+.search-result-item:hover {
+    background-color: #f8f9fa;
+}
+
+#search-results-dropdown {
+    border-top: none;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.product-card {
+    border: none;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden; /* Ensure hover image stays within card */
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+.product-card-img-container {
+    position: relative;
+    width: 100%;
+    padding-top: 100%; /* 1:1 Aspect Ratio */
+    background-color: #f8f9fa; /* Placeholder background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.product-img-main,
+.product-img-hover {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.5s ease;
+}
+
+.product-img-hover {
+    opacity: 0;
+}
+
+.product-card:hover .product-img-hover {
+    opacity: 1;
+}
+
+.product-card:hover .product-img-main {
+    opacity: 0;
+}
+
+.price-tag {
+    color: #FF6B35; /* Orange theme color */
+}
+
+.bg-orange {
+    background-color: #FF6B35 !important;
+}
+
+.text-orange {
+    color: #FF6B35 !important;
+}
+
+/* Adjusting card-body padding for better spacing */
+.card-body {
+    padding: 1rem;
+}
+
+/* Ensuring consistent height for cards */
+.product-card.h-100 {
+    display: flex;
+    flex-direction: column;
+}
+
+.product-card .card-body.flex-column {
+    flex: 1; /* Allows card-body to grow and fill available space */
+}
+
+/* Make clickable */
+.product-card-clickable {
+    cursor: pointer;
+}
+
+.product-card-clickable:hover {
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+/* Adjusting text colors for theme */
+h1, h2, h3, h4, h5, h6, .card-title {
+    color: #333; /* Darker text for main titles */
+}
+.card-text, .text-muted {
+    color: #6c757d !important; /* Muted text for descriptions */
+}
+.fw-bold {
+    font-weight: bold;
+}
+</style>
+{% endblock %}

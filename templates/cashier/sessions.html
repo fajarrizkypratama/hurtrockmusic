@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riwayat Sesi Kasir - Hurtrock Music Store</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .sessions-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: #6c757d;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        
+        .back-btn:hover {
+            background: #5a6268;
+            color: white;
+        }
+        
+        .sessions-table {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #ddd;
+        }
+        
+        .table-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            font-weight: bold;
+            border-bottom: 1px solid #ddd;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr auto;
+            gap: 20px;
+        }
+        
+        .session-row {
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr 1fr auto;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .session-row:last-child {
+            border-bottom: none;
+        }
+        
+        .session-row:hover {
+            background: #f8f9fa;
+        }
+        
+        .session-status {
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        
+        .session-status.active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .session-status.closed {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .session-status.suspended {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .session-details {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            margin-top: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .session-details.show {
+            display: block;
+        }
+        
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .details-section h4 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+        
+        .no-sessions {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+        
+        .cash-difference {
+            font-weight: bold;
+        }
+        
+        .cash-difference.positive {
+            color: #27ae60;
+        }
+        
+        .cash-difference.negative {
+            color: #e74c3c;
+        }
+        
+        .cash-difference.zero {
+            color: #666;
+        }
+        
+        .duration {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        @media (max-width: 768px) {
+            .table-header,
+            .session-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sessions-container">
+        <div class="header-actions">
+            <h1>Riwayat Sesi Kasir</h1>
+            <div class="actions">
+                <a href="/cashier" class="back-btn">
+                    ← Kembali ke Kasir
+                </a>
+            </div>
+        </div>
+
+        <div class="sessions-table">
+            <div class="table-header">
+                <div>Tanggal Mulai</div>
+                <div>Durasi</div>
+                <div>Total Transaksi</div>
+                <div>Total Penjualan</div>
+                <div>Status</div>
+                <div>Aksi</div>
+            </div>
+
+            {% if sessions %}
+                {% for session in sessions %}
+                <div class="session-row" data-session-id="{{ session.id }}">
+                    <div>{{ session.session_start.strftime('%d/%m/%Y %H:%M') }}</div>
+                    <div class="duration">
+                        {% if session.session_end %}
+                            {{ ((session.session_end - session.session_start).total_seconds() / 3600) | round(1) }} jam
+                        {% else %}
+                            Aktif
+                        {% endif %}
+                    </div>
+                    <div>{{ session.total_transactions }} transaksi</div>
+                    <div>Rp {{ "{:,.0f}".format(session.total_sales).replace(',', '.') }}</div>
+                    <div>
+                        <span class="session-status {{ session.status }}">
+                            {% if session.status == 'active' %}
+                                Aktif
+                            {% elif session.status == 'closed' %}
+                                Selesai
+                            {% elif session.status == 'suspended' %}
+                                Ditangguhkan
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div>
+                        <button onclick="toggleSessionDetails({{ session.id }})" class="back-btn" style="background: #17a2b8; padding: 5px 10px; font-size: 12px;">
+                            Detail
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="session-details-{{ session.id }}" class="session-details">
+                    <div class="details-grid">
+                        <div class="details-section">
+                            <h4>Waktu Sesi</h4>
+                            <div class="stat-item">
+                                <span>Mulai:</span>
+                                <span>{{ session.session_start.strftime('%d/%m/%Y %H:%M:%S') }}</span>
+                            </div>
+                            {% if session.session_end %}
+                            <div class="stat-item">
+                                <span>Selesai:</span>
+                                <span>{{ session.session_end.strftime('%d/%m/%Y %H:%M:%S') }}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Durasi:</span>
+                                <span>
+                                    {% set duration_hours = ((session.session_end - session.session_start).total_seconds() / 3600) | round(1) %}
+                                    {{ duration_hours }} jam
+                                </span>
+                            </div>
+                            {% else %}
+                            <div class="stat-item">
+                                <span>Status:</span>
+                                <span style="color: #27ae60; font-weight: bold;">Masih Aktif</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="details-section">
+                            <h4>Statistik Penjualan</h4>
+                            <div class="stat-item">
+                                <span>Total Transaksi:</span>
+                                <span>{{ session.total_transactions }}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Total Penjualan:</span>
+                                <span>Rp {{ "{:,.0f}".format(session.total_sales).replace(',', '.') }}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Penjualan Tunai:</span>
+                                <span>Rp {{ "{:,.0f}".format(session.cash_sales).replace(',', '.') }}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>Penjualan Non-Tunai:</span>
+                                <span>Rp {{ "{:,.0f}".format(session.card_sales).replace(',', '.') }}</span>
+                            </div>
+                            {% if session.total_transactions > 0 %}
+                            <div class="stat-item">
+                                <span>Rata-rata per Transaksi:</span>
+                                <span>Rp {{ "{:,.0f}".format(session.total_sales / session.total_transactions).replace(',', '.') }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="details-section">
+                            <h4>Manajemen Kas</h4>
+                            <div class="stat-item">
+                                <span>Kas Awal:</span>
+                                <span>Rp {{ "{:,.0f}".format(session.opening_cash).replace(',', '.') }}</span>
+                            </div>
+                            {% if session.closing_cash is not none %}
+                            <div class="stat-item">
+                                <span>Kas Akhir:</span>
+                                <span>Rp {{ "{:,.0f}".format(session.closing_cash).replace(',', '.') }}</span>
+                            </div>
+                            {% endif %}
+                            {% if session.expected_cash is not none %}
+                            <div class="stat-item">
+                                <span>Kas Seharusnya:</span>
+                                <span>Rp {{ "{:,.0f}".format(session.expected_cash).replace(',', '.') }}</span>
+                            </div>
+                            {% endif %}
+                            {% if session.cash_difference is not none %}
+                            <div class="stat-item">
+                                <span>Selisih:</span>
+                                <span class="cash-difference {% if session.cash_difference > 0 %}positive{% elif session.cash_difference < 0 %}negative{% else %}zero{% endif %}">
+                                    {% if session.cash_difference > 0 %}
+                                        +Rp {{ "{:,.0f}".format(session.cash_difference).replace(',', '.') }}
+                                    {% elif session.cash_difference < 0 %}
+                                        -Rp {{ "{:,.0f}".format(abs(session.cash_difference)).replace(',', '.') }}
+                                    {% else %}
+                                        Rp 0 (Sesuai)
+                                    {% endif %}
+                                </span>
+                            </div>
+                            {% endif %}
+                            {% if session.notes %}
+                            <div class="stat-item" style="border-bottom: none; flex-direction: column; align-items: flex-start;">
+                                <span style="font-weight: bold; margin-bottom: 5px;">Catatan:</span>
+                                <span style="font-style: italic;">{{ session.notes }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-sessions">
+                    <p>Belum ada sesi kasir yang tercatat.</p>
+                    <a href="/cashier" class="back-btn">Mulai Sesi Pertama</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function toggleSessionDetails(sessionId) {
+            const details = document.getElementById(`session-details-${sessionId}`);
+            if (details.classList.contains('show')) {
+                details.classList.remove('show');
+            } else {
+                // Hide all other details first
+                document.querySelectorAll('.session-details').forEach(detail => {
+                    detail.classList.remove('show');
+                });
+                details.classList.add('show');
+            }
+        }
+    </script>
+</body>
+</html>

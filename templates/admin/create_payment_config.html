@@ -1,0 +1,353 @@
+{% extends 'admin/base.html' %} {% block title %}Tambah Konfigurasi Payment{%
+endblock %} {% block page_title %}Tambah Konfigurasi Payment{% endblock %} {%
+block content %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2>Tambah Konfigurasi Payment Gateway</h2>
+      <a
+        href="{{ url_for('admin_payment_config') }}"
+        class="btn btn-outline-orange"
+      >
+        <i class="fas fa-arrow-left"></i> Kembali
+      </a>
+    </div>
+
+    <form method="POST" id="paymentConfigForm">
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">1. Pilih Provider Payment Gateway</h5>
+        </div>
+        <div class="card-body">
+          <input type="hidden" name="provider" id="selectedProvider" value="" />
+
+          <div class="row g-3" id="providerCards">
+            <div class="col-md-6 col-lg-3">
+              <div class="provider-card" data-provider="midtrans">
+                <div class="provider-card-header">
+                  <i class="fas fa-credit-card"></i>
+                </div>
+                <div class="provider-card-body">
+                  <h5>Midtrans</h5>
+                  <p class="text-muted small">
+                    Payment gateway lokal Indonesia
+                  </p>
+                </div>
+                <div class="provider-card-check">
+                  <i class="fas fa-check-circle"></i>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+              <div class="provider-card" data-provider="stripe">
+                <div class="provider-card-header">
+                  <i class="fab fa-stripe"></i>
+                </div>
+                <div class="provider-card-body">
+                  <h5>Stripe</h5>
+                  <p class="text-muted small">Payment gateway internasional</p>
+                </div>
+                <div class="provider-card-check">
+                  <i class="fas fa-check-circle"></i>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+              <div class="provider-card" data-provider="xendit">
+                <div class="provider-card-header">
+                  <i class="fas fa-wallet"></i>
+                </div>
+                <div class="provider-card-body">
+                  <h5>Xendit</h5>
+                  <p class="text-muted small">
+                    Payment gateway Indonesia & SEA
+                  </p>
+                </div>
+                <div class="provider-card-check">
+                  <i class="fas fa-check-circle"></i>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+              <div class="provider-card" data-provider="doku">
+                <div class="provider-card-header">
+                  <i class="fas fa-university"></i>
+                </div>
+                <div class="provider-card-body">
+                  <h5>DOKU</h5>
+                  <p class="text-muted small">
+                    Payment gateway lokal Indonesia
+                  </p>
+                </div>
+                <div class="provider-card-check">
+                  <i class="fas fa-check-circle"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="alert alert-info mt-3"
+            id="providerAlert"
+            style="display: none"
+          >
+            <i class="fas fa-info-circle"></i> Silakan pilih provider payment
+            gateway terlebih dahulu.
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">2. Environment Setting</h5>
+        </div>
+        <div class="card-body">
+          <div class="form-check form-switch">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="sandboxToggle"
+              name="is_sandbox"
+              value="true"
+              checked
+            />
+            <label class="form-check-label" for="sandboxToggle">
+              <strong id="environmentLabel">Sandbox Mode</strong>
+              <br />
+              <small class="text-muted" id="environmentDescription"
+                >Gunakan untuk testing dan development</small
+              >
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4" id="configFormCard" style="display: none">
+        <div class="card-header">
+          <h5 class="mb-0">3. Konfigurasi <span id="providerName"></span></h5>
+        </div>
+        <div class="card-body">
+          <div id="midtransForm" class="provider-form" style="display: none">
+            <div class="mb-3">
+              <label for="midtrans_client_key" class="form-label"
+                >Client Key <span class="text-danger">*</span></label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="midtrans_client_key"
+                name="midtrans_client_key"
+                placeholder="SB-Mid-client-xxxxx"
+              />
+            </div>
+            <div class="mb-3">
+              <label for="midtrans_server_key" class="form-label"
+                >Server Key <span class="text-danger">*</span></label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="midtrans_server_key"
+                name="midtrans_server_key"
+                placeholder="SB-Mid-server-xxxxx"
+              />
+            </div>
+            <div class="mb-3">
+              <label for="midtrans_merchant_id" class="form-label"
+                >Merchant ID</label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="midtrans_merchant_id"
+                name="midtrans_merchant_id"
+                placeholder="Optional"
+              />
+            </div>
+          </div>
+          <div class="alert alert-info">
+            <h6 class="mb-2">
+              <i class="fas fa-info-circle me-2"></i>URL Callback yang akan
+              dikonfigurasi:
+            </h6>
+            <div class="row">
+              <div class="col-md-6">
+                <small class="d-block mb-2">
+                  <strong>Finish URL:</strong><br />
+                  <code id="finishUrl"></code>
+                </small>
+                <small class="d-block mb-2">
+                  <strong>Error URL:</strong><br />
+                  <code id="errorUrl"></code>
+                </small>
+                <small class="d-block mb-2">
+                  <strong>Unfinish URL:</strong><br />
+                  <code id="unfinishUrl"></code>
+                </small>
+              </div>
+              <div class="col-md-6">
+                <small class="d-block mb-2">
+                  <strong>Notification URL:</strong><br />
+                  <code id="notificationUrl"></code>
+                </small>
+                <small class="d-block mb-2">
+                  <strong>Recurring Notification:</strong><br />
+                  <code id="recurringUrl"></code>
+                </small>
+                <small class="d-block">
+                  <strong>Account Linking URL:</strong><br />
+                  <code id="accountLinkingUrl"></code>
+                </small>
+              </div>
+            </div>
+            <div class="mt-3 p-2 bg-light rounded">
+              <small class="text-muted">
+                <i class="fas fa-lightbulb me-1"></i>
+                <strong>Catatan:</strong> Salin URL-URL ini ke dashboard
+                Midtrans Anda pada bagian Settings > Configuration untuk
+                mengaktifkan notifikasi otomatis.
+              </small>
+            </div>
+          </div>
+
+          <div id="stripeForm" class="provider-form" style="display: none">
+            <div class="mb-3">
+              <label for="stripe_publishable_key" class="form-label"
+                >Publishable Key <span class="text-danger">*</span></label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="stripe_publishable_key"
+                name="stripe_publishable_key"
+                placeholder="pk_test_xxxxx"
+              />
+            </div>
+            <div class="mb-3">
+              <label for="stripe_secret_key" class="form-label"
+                >Secret Key <span class="text-danger">*</span></label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="stripe_secret_key"
+                name="stripe_secret_key"
+                placeholder="sk_test_xxxxx"
+              />
+            </div>
+          </div>
+
+          <div id="xenditForm" class="provider-form" style="display: none">
+            <div class="mb-3">
+              <label for="xendit_api_key" class="form-label"
+                >API Key <span class="text-danger">*</span></label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="xendit_api_key"
+                name="xendit_api_key"
+                placeholder="xnd_development_xxxxx"
+              />
+            </div>
+            <div class="mb-3">
+              <label for="xendit_webhook_token" class="form-label"
+                >Webhook Verification Token</label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="xendit_webhook_token"
+                name="xendit_webhook_token"
+                placeholder="Optional"
+              />
+            </div>
+            <div class="mb-3">
+              <label for="xendit_public_key" class="form-label"
+                >Public Key</label
+              >
+              <textarea
+                class="form-control"
+                id="xendit_public_key"
+                name="xendit_public_key"
+                rows="3"
+                placeholder="Optional"
+              ></textarea>
+            </div>
+          </div>
+
+          <div id="dokuForm" class="provider-form" style="display: none">
+            <div class="mb-3">
+              <label for="doku_client_id" class="form-label"
+                >Client ID <span class="text-danger">*</span></label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="doku_client_id"
+                name="doku_client_id"
+                placeholder="BRN-xxxxx"
+              />
+            </div>
+            <div class="mb-3">
+              <label for="doku_secret_key" class="form-label"
+                >Secret Key <span class="text-danger">*</span></label
+              >
+              <input
+                type="text"
+                class="form-control"
+                id="doku_secret_key"
+                name="doku_secret_key"
+                placeholder="SK-xxxxx"
+              />
+            </div>
+            <div class="mb-3">
+              <label for="doku_private_key" class="form-label"
+                >Private Key</label
+              >
+              <textarea
+                class="form-control"
+                id="doku_private_key"
+                name="doku_private_key"
+                rows="3"
+                placeholder="Optional"
+              ></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="doku_public_key" class="form-label">Public Key</label>
+              <textarea
+                class="form-control"
+                id="doku_public_key"
+                name="doku_public_key"
+                rows="3"
+                placeholder="Optional"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-grid gap-2">
+        <button
+          type="submit"
+          class="btn btn-orange btn-lg"
+          id="submitBtn"
+          disabled
+        >
+          <i class="fas fa-save"></i> Simpan Konfigurasi
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %} {% block extra_css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/payment-config.css') }}"
+/>
+{% endblock %} {% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/payment-config.js') }}"></script>
+{% endblock %}

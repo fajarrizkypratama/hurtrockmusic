@@ -1,0 +1,27 @@
+User-agent: *
+Allow: /
+Allow: /favicon.ico
+
+# Allow crawling of static assets
+Allow: /static/
+Allow: /static/images/
+Allow: /static/public/produk_images/
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /cart
+Disallow: /checkout
+Disallow: /orders
+Disallow: /profile
+
+# Disallow unnecessary URLs
+Disallow: /*?*utm_*
+Disallow: /*?*fbclid*
+Disallow: /*?*gclid*
+
+# Sitemap location
+Sitemap: {{ request.url_root }}sitemap.xml
+
+# Crawl delay (optional - remove if you want faster crawling)
+Crawl-delay: 1

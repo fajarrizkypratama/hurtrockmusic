@@ -1,0 +1,566 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Kelola Invoice - Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Kelola Invoice</h2>
+    <div class="d-flex align-items-center gap-3">
+        <div class="input-group" style="max-width: 350px;">
+            <span class="input-group-text bg-light border-0">
+                <i class="fas fa-search text-muted"></i>
+            </span>
+            <input type="text" id="invoiceSearchInput" class="form-control border-0 bg-light" placeholder="Cari invoice, customer, email..." autocomplete="off">
+        </div>
+        <div class="badge bg-info">{{ invoices|length }} Total Invoice</div>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createManualInvoiceModal">
+            <i class="fas fa-plus me-2"></i>Create Manual Invoice
+        </button>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Invoice No</th>
+                        <th>Customer</th>
+                        <th>Order ID</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Tanggal</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for invoice in invoices %}
+                    <tr>
+                        <td><strong>{{ invoice.invoice_number }}</strong></td>
+                        <td>
+                            <div>{{ invoice.customer_name }}</div>
+                            <small class="text-muted">{{ invoice.customer_email or '-' }}</small>
+                        </td>
+                        <td>
+                            {% if invoice.order_id %}
+                                <a href="{{ url_for('admin_orders') }}">#{{ invoice.order_id }}</a>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td><strong>{{ invoice.formatted_total }}</strong></td>
+                        <td>
+                            {% if invoice.status == 'Paid' %}
+                                <span class="badge bg-success">Paid</span>
+                            {% elif invoice.status == 'On Process' %}
+                                <span class="badge bg-info">On Process</span>
+                            {% else %}
+                                <span class="badge bg-warning">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div>{{ invoice.created_at.strftime('%d/%m/%Y') }}</div>
+                            <small class="text-muted">{{ invoice.created_at.strftime('%H:%M') }}</small>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('admin_export_invoice_excel', invoice_id=invoice.id) }}" 
+                                   class="btn btn-sm btn-success">
+                                    <svg class="admin-svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg> Excel
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                        data-bs-toggle="modal" data-bs-target="#statusModal{{ invoice.id }}">
+                                    <svg class="admin-svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M11 4H4C3.4 4 3 4.4 3 5V20C3 20.6 3.4 21 4 21H19C19.6 21 20 20.6 20 20V13" stroke="currentColor" stroke-width="2" fill="none"/>
+                                        <path d="M18.5 2.5C19.3 1.7 20.7 1.7 21.5 2.5S22.3 4.7 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    </svg> Status
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Status Update Modal -->
+                    <div class="modal fade" id="statusModal{{ invoice.id }}" tabindex="-1" aria-labelledby="statusModalLabel{{ invoice.id }}" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header bg-white text-dark border-bottom">
+                                    <h5 class="modal-title" id="statusModalLabel{{ invoice.id }}">Update Status Invoice</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form method="POST" action="{{ url_for('admin_update_invoice_status', invoice_id=invoice.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Invoice: {{ invoice.invoice_number }}</label>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="status{{ invoice.id }}" class="form-label">Status Baru</label>
+                                            <select class="form-select" id="status{{ invoice.id }}" name="status" required>
+                                                <option value="Pending" {% if invoice.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                                <option value="On Process" {% if invoice.status == 'On Process' %}selected{% endif %}>On Process</option>
+                                                <option value="Paid" {% if invoice.status == 'Paid' %}selected{% endif %}>Paid</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                        <button type="submit" class="btn btn-primary">Update Status</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if not invoices %}
+        <div class="text-center py-5">
+            <p class="text-muted">Belum ada invoice. Buat invoice dari halaman Orders atau create manual invoice.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Create Manual Invoice Modal -->
+<div class="modal fade" id="createManualInvoiceModal" tabindex="-1" aria-labelledby="createManualInvoiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-white text-dark border-bottom">
+                <h5 class="modal-title" id="createManualInvoiceModalLabel">
+                    <i class="fas fa-file-invoice me-2"></i>Create Manual Invoice
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="manualInvoiceForm" method="POST" action="{{ url_for('admin_create_manual_invoice') }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Customer Information -->
+                        <div class="col-md-6">
+                            <h6 class="border-bottom pb-2 mb-3">Customer Information</h6>
+                            <div class="mb-4">
+                                <label class="form-label">Customer Name *</label>
+                                <input type="text" class="form-control" name="customer_name" required>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" name="customer_email">
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label">Phone</label>
+                                <input type="text" class="form-control" name="customer_phone">
+                            </div>
+                            <div class="mb-5">
+                                <label class="form-label">Address</label>
+                                <textarea class="form-control" name="customer_address" rows="5"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Invoice Details -->
+                        <div class="col-md-6">
+                            <h6 class="border-bottom pb-2 mb-3">Invoice Details</h6>
+                            <div class="mb-4">
+                                <label class="form-label">Payment Method</label>
+                                <select class="form-select" name="payment_method">
+                                    <option value="">Select Payment Method</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Transfer">Transfer</option>
+                                    <option value="Credit Card">Credit Card</option>
+                                    <option value="Debit Card">Debit Card</option>
+                                    <option value="QRIS">QRIS</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" name="status">
+                                    <option value="Pending">Pending</option>
+                                    <option value="On Process">On Process</option>
+                                    <option value="Paid">Paid</option>
+                                </select>
+                            </div>
+                            <div class="mb-5">
+                                <label class="form-label">Notes</label>
+                                <textarea class="form-control" name="notes" rows="6"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Items Section -->
+                    <div class="mt-4">
+                        <h6 class="border-bottom pb-2 mb-3">
+                            Items
+                            <button type="button" class="btn btn-sm btn-success float-end" onclick="addInvoiceItem()">
+                                <i class="fas fa-plus me-1"></i>Add Item
+                            </button>
+                        </h6>
+                        <div id="invoiceItemsContainer"></div>
+                    </div>
+
+                    <!-- Totals -->
+                    <div class="row mt-4">
+                        <div class="col-md-6 offset-md-6">
+                            <table class="table">
+                                <tr>
+                                    <td><strong>Subtotal:</strong></td>
+                                    <td class="text-end"><span id="invoiceSubtotal">Rp 0</span></td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <label class="form-label mb-0">Shipping Cost:</label>
+                                        <input type="number" class="form-control form-control-sm" name="shipping_cost" value="0" min="0" onchange="calculateInvoiceTotal()">
+                                    </td>
+                                    <td class="text-end"><span id="invoiceShipping">Rp 0</span></td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <label class="form-label mb-0">Tax:</label>
+                                        <input type="number" class="form-control form-control-sm" name="tax_amount" value="0" min="0" onchange="calculateInvoiceTotal()">
+                                    </td>
+                                    <td class="text-end"><span id="invoiceTax">Rp 0</span></td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <label class="form-label mb-0">Discount:</label>
+                                        <input type="number" class="form-control form-control-sm" name="discount_amount" value="0" min="0" onchange="calculateInvoiceTotal()">
+                                    </td>
+                                    <td class="text-end"><span id="invoiceDiscount">Rp 0</span></td>
+                                </tr>
+                                <tr class="table-dark">
+                                    <td><strong>TOTAL:</strong></td>
+                                    <td class="text-end"><strong><span id="invoiceTotal">Rp 0</span></strong></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="items" id="invoiceItemsJSON">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Create Invoice
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let invoiceItems = [];
+let itemCounter = 0;
+
+function addInvoiceItem() {
+    itemCounter++;
+    const container = document.getElementById('invoiceItemsContainer');
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'card mb-3';
+    itemDiv.id = `item-${itemCounter}`;
+    itemDiv.innerHTML = `
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0">Item #${itemCounter}</h6>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeInvoiceItem(${itemCounter})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <div class="row">
+                <div class="col-md-12 mb-2">
+                    <label class="form-label">Pilih Produk dari Database (Opsional)</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="product_search_${itemCounter}" placeholder="Ketik nama/brand/ID produk (minimal 2 karakter)..." autocomplete="off">
+                        <button type="button" class="btn btn-outline-secondary" onclick="searchProducts(${itemCounter})">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    <div id="product_results_${itemCounter}" class="list-group mt-2" style="display: none; max-height: 300px; overflow-y: auto; position: absolute; z-index: 1050; width: calc(100% - 30px); background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 4px;"></div>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-4 mb-2">
+                    <label class="form-label">Item Name *</label>
+                    <input type="text" class="form-control" id="item_name_${itemCounter}" required>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label">Description</label>
+                    <input type="text" class="form-control" id="item_desc_${itemCounter}">
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label class="form-label">Quantity *</label>
+                    <input type="number" class="form-control" id="item_qty_${itemCounter}" min="1" value="1" onchange="calculateInvoiceTotal()" required>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label">Unit Price *</label>
+                    <input type="number" class="form-control" id="item_price_${itemCounter}" min="0" value="0" onchange="calculateInvoiceTotal()" required>
+                </div>
+            </div>
+        </div>
+    `;
+    container.appendChild(itemDiv);
+    
+    // Add real-time search on typing
+    const searchInput = document.getElementById(`product_search_${itemCounter}`);
+    searchInput.addEventListener('input', function(e) {
+        searchProducts(itemCounter);
+    });
+    
+    // Also support enter key
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            searchProducts(itemCounter);
+        }
+    });
+    
+    // Hide results when clicking outside
+    searchInput.addEventListener('blur', function() {
+        setTimeout(() => {
+            const resultsDiv = document.getElementById(`product_results_${itemCounter}`);
+            if (resultsDiv) resultsDiv.style.display = 'none';
+        }, 200);
+    });
+}
+
+function removeInvoiceItem(id) {
+    const item = document.getElementById(`item-${id}`);
+    if (item) {
+        item.remove();
+        calculateInvoiceTotal();
+    }
+}
+
+function calculateInvoiceTotal() {
+    let subtotal = 0;
+    
+    // Calculate subtotal from items
+    for (let i = 1; i <= itemCounter; i++) {
+        const itemDiv = document.getElementById(`item-${i}`);
+        if (itemDiv) {
+            const qty = parseFloat(document.getElementById(`item_qty_${i}`).value) || 0;
+            const price = parseFloat(document.getElementById(`item_price_${i}`).value) || 0;
+            subtotal += qty * price;
+        }
+    }
+    
+    const shipping = parseFloat(document.querySelector('input[name="shipping_cost"]').value) || 0;
+    const tax = parseFloat(document.querySelector('input[name="tax_amount"]').value) || 0;
+    const discount = parseFloat(document.querySelector('input[name="discount_amount"]').value) || 0;
+    
+    const total = subtotal + shipping + tax - discount;
+    
+    // Update display
+    document.getElementById('invoiceSubtotal').textContent = formatRupiah(subtotal);
+    document.getElementById('invoiceShipping').textContent = formatRupiah(shipping);
+    document.getElementById('invoiceTax').textContent = formatRupiah(tax);
+    document.getElementById('invoiceDiscount').textContent = formatRupiah(discount);
+    document.getElementById('invoiceTotal').textContent = formatRupiah(total);
+}
+
+function formatRupiah(amount) {
+    return 'Rp ' + amount.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+// Search products from database with debounce for real-time typing
+let searchTimeouts = {};
+
+async function searchProducts(itemId) {
+    const searchInput = document.getElementById(`product_search_${itemId}`);
+    const resultsDiv = document.getElementById(`product_results_${itemId}`);
+    const query = searchInput.value.trim();
+    
+    // Clear previous timeout
+    if (searchTimeouts[itemId]) {
+        clearTimeout(searchTimeouts[itemId]);
+    }
+    
+    if (!query || query.length < 2) {
+        resultsDiv.style.display = 'none';
+        return;
+    }
+    
+    // Show loading state
+    resultsDiv.innerHTML = '<div class="list-group-item"><i class="fas fa-spinner fa-spin"></i> Mencari produk...</div>';
+    resultsDiv.style.display = 'block';
+    
+    // Debounce search - wait 300ms after user stops typing
+    searchTimeouts[itemId] = setTimeout(async () => {
+        try {
+            const response = await fetch(`/api/admin/products/search?q=${encodeURIComponent(query)}`, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.success && data.products && data.products.length > 0) {
+                resultsDiv.innerHTML = '';
+                data.products.forEach(product => {
+                    const item = document.createElement('a');
+                    item.href = '#';
+                    item.className = 'list-group-item list-group-item-action';
+                    item.style.cursor = 'pointer';
+                    item.innerHTML = `
+                        <div class="d-flex w-100 justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">${product.name}</h6>
+                                <p class="mb-1"><small class="text-muted">${product.brand || 'No Brand'} | Stok: ${product.stock_quantity}</small></p>
+                                ${product.gtin ? `<small class="text-muted">ID: ${product.id} | GTIN: ${product.gtin}</small>` : `<small class="text-muted">ID: ${product.id}</small>`}
+                            </div>
+                            <span class="badge bg-success ms-2">Rp ${product.price.toLocaleString('id-ID')}</span>
+                        </div>
+                    `;
+                    item.onclick = (e) => {
+                        e.preventDefault();
+                        selectProduct(itemId, product);
+                    };
+                    resultsDiv.appendChild(item);
+                });
+                resultsDiv.style.display = 'block';
+            } else {
+                resultsDiv.innerHTML = `
+                    <div class="list-group-item text-muted">
+                        <i class="fas fa-info-circle"></i> 
+                        Produk tidak ditemukan untuk "${query}". 
+                        <br><small>Coba cari dengan ID, GTIN, nama produk, atau brand.</small>
+                    </div>
+                `;
+                resultsDiv.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Error searching products:', error);
+            resultsDiv.innerHTML = '<div class="list-group-item text-danger"><i class="fas fa-exclamation-triangle"></i> Gagal mencari produk. Silakan coba lagi.</div>';
+            resultsDiv.style.display = 'block';
+        }
+    }, 300); // 300ms debounce
+}
+
+// Select product and fill form
+function selectProduct(itemId, product) {
+    // Fill form fields with product data
+    document.getElementById(`item_name_${itemId}`).value = product.name;
+    
+    // Create description dari brand dan product description
+    let description = product.brand || '';
+    if (product.description && product.description.length > 0) {
+        description += (description ? ' - ' : '') + product.description;
+    }
+    document.getElementById(`item_desc_${itemId}`).value = description.substring(0, 100);
+    
+    // Set unit price dari database
+    document.getElementById(`item_price_${itemId}`).value = product.price;
+    
+    // Set quantity default ke 1
+    document.getElementById(`item_qty_${itemId}`).value = 1;
+    
+    // Hide search results
+    document.getElementById(`product_results_${itemId}`).style.display = 'none';
+    
+    // Show success indicator in search box
+    document.getElementById(`product_search_${itemId}`).value = `✓ ${product.name} (Terpilih)`;
+    document.getElementById(`product_search_${itemId}`).style.backgroundColor = '#e8f5e9';
+    
+    // Recalculate total
+    calculateInvoiceTotal();
+}
+
+// Real-time invoice search
+const invoiceSearchInput = document.getElementById('invoiceSearchInput');
+if (invoiceSearchInput) {
+    invoiceSearchInput.addEventListener('input', function(e) {
+        const query = this.value.toLowerCase().trim();
+        const tableRows = document.querySelectorAll('table tbody tr');
+        
+        tableRows.forEach(row => {
+            const invoiceNumber = row.querySelector('td:nth-child(1)')?.textContent.toLowerCase() || '';
+            const customerName = row.querySelector('td:nth-child(2) div')?.textContent.toLowerCase() || '';
+            const customerEmail = row.querySelector('td:nth-child(2) small')?.textContent.toLowerCase() || '';
+            const orderId = row.querySelector('td:nth-child(3)')?.textContent.toLowerCase() || '';
+            const total = row.querySelector('td:nth-child(4)')?.textContent.toLowerCase() || '';
+            const status = row.querySelector('td:nth-child(5)')?.textContent.toLowerCase() || '';
+            
+            const searchText = `${invoiceNumber} ${customerName} ${customerEmail} ${orderId} ${total} ${status}`;
+            
+            if (searchText.includes(query) || query === '') {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Update visible count
+        const visibleRows = Array.from(tableRows).filter(row => row.style.display !== 'none').length;
+        const totalBadge = document.querySelector('.badge.bg-info');
+        if (totalBadge && query) {
+            totalBadge.textContent = `${visibleRows} dari {{ invoices|length }} Invoice`;
+        } else if (totalBadge) {
+            totalBadge.textContent = '{{ invoices|length }} Total Invoice';
+        }
+    });
+    
+    // Clear search on escape
+    invoiceSearchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            this.value = '';
+            this.dispatchEvent(new Event('input'));
+            this.blur();
+        }
+    });
+}
+
+// Form submission
+document.getElementById('manualInvoiceForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Collect items data
+    const items = [];
+    for (let i = 1; i <= itemCounter; i++) {
+        const itemDiv = document.getElementById(`item-${i}`);
+        if (itemDiv) {
+            const itemName = document.getElementById(`item_name_${i}`).value;
+            const itemDesc = document.getElementById(`item_desc_${i}`).value;
+            const itemQty = document.getElementById(`item_qty_${i}`).value;
+            const itemPrice = document.getElementById(`item_price_${i}`).value;
+            
+            if (itemName && itemQty && itemPrice) {
+                items.push({
+                    item_name: itemName,
+                    description: itemDesc,
+                    quantity: itemQty,
+                    unit_price: itemPrice
+                });
+            }
+        }
+    }
+    
+    if (items.length === 0) {
+        alert('Please add at least one item!');
+        return;
+    }
+    
+    // Set items JSON
+    document.getElementById('invoiceItemsJSON').value = JSON.stringify(items);
+    
+    // Submit form
+    this.submit();
+});
+
+// Add first item when modal opens
+document.getElementById('createManualInvoiceModal').addEventListener('shown.bs.modal', function () {
+    if (invoiceItems.length === 0) {
+        addInvoiceItem();
+    }
+});
+</script>
+{% endblock %}

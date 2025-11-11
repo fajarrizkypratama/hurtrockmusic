@@ -1,0 +1,459 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Dashboard Admin - Hurtrock Music Store{% endblock %}
+
+{% block content %}
+<!-- Welcome Section -->
+<div class="mb-4">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h1 class="display-5 mb-2" style="color: var(--orange-primary) !important;">
+                Selamat Datang, {{ current_user.name }}! 
+                <span class="badge {% if current_user.role == 'admin' %}bg-danger{% else %}bg-success{% endif %} fs-6">
+                    {% if current_user.role == 'admin' %}
+                        <i class="fas fa-user-shield me-1"></i>Admin
+                    {% elif current_user.role == 'staff' %}
+                        <i class="fas fa-user-tie me-1"></i>Staff
+                    {% else %}
+                        <i class="fas fa-user me-1"></i>{{ current_user.role.title() }}
+                    {% endif %}
+                </span>
+            </h1>
+            <p class="lead mb-0 text-muted">Kelola toko musik Anda dengan mudah dari dashboard ini.</p>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+            <div class="badge bg-orange fs-6 px-3 py-2">
+                <svg class="admin-svg-icon me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" fill="none"/>
+                </svg>{{ current_date.strftime('%d %B %Y') }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-5">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card admin-stats-card border-0 h-100">
+            <div class="card-body text-center p-4">
+                <div class="admin-stats-icon mb-3">
+                    <svg class="admin-stats-svg-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 1L14.5 8.5L22 9L16.5 15L18 22L12 18.5L6 22L7.5 15L2 9L9.5 8.5L12 1Z" stroke="currentColor" stroke-width="2" fill="currentColor" opacity="0.8"/>
+                    </svg>
+                </div>
+                <div class="admin-stats-number">{{ total_products }}</div>
+                <div class="admin-stats-label">Total Produk</div>
+                <div class="mt-3">
+                    <a href="{{ url_for('admin_products') }}" class="btn btn-outline-orange btn-sm">
+                        <i class="fas fa-eye me-1"></i>Lihat Detail
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card admin-stats-card border-0 h-100">
+            <div class="card-body text-center p-4">
+                <div class="admin-stats-icon mb-3">
+                    <svg class="admin-stats-svg-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 7H15M9 11H15M9 15H13M6 3H18C19.1 3 20 3.9 20 5V19C20 20.1 19.1 21 18 21H6C4.9 21 4 20.1 4 19V5C4 3.9 4.9 3 6 3Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <circle cx="7" cy="7" r="1" fill="currentColor"/>
+                        <circle cx="7" cy="11" r="1" fill="currentColor"/>
+                        <circle cx="7" cy="15" r="1" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="admin-stats-number">{{ total_orders }}</div>
+                <div class="admin-stats-label">Total Pesanan</div>
+                <div class="mt-3">
+                    <a href="{{ url_for('admin_orders') }}" class="btn btn-outline-orange btn-sm">
+                        <i class="fas fa-eye me-1"></i>Lihat Detail
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card admin-stats-card border-0 h-100">
+            <div class="card-body text-center p-4">
+                <div class="admin-stats-icon mb-3">
+                    <svg class="admin-stats-svg-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M1 21V19C1 16.8 2.8 15 5 15H13C15.2 15 17 16.8 17 19V21" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M16 3.13C17.73 3.85 19 5.6 19 7.75S17.73 11.65 16 12.37" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M22 21V19C22 17.1 20.9 15.4 19.21 14.84" stroke="currentColor" stroke-width="2" fill="none"/>
+                    </svg>
+                </div>
+                <div class="admin-stats-number">{{ total_users }}</div>
+                <div class="admin-stats-label">Total Pengguna</div>
+                <div class="mt-3">
+                    {% if current_user.is_admin %}
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-outline-orange btn-sm">
+                        <i class="fas fa-eye me-1"></i>Lihat Detail
+                    </a>
+                    {% else %}
+                    <span class="btn btn-outline-secondary btn-sm disabled">
+                        <i class="fas fa-lock me-1"></i>Admin Only
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card admin-stats-card border-0 h-100">
+            <div class="card-body text-center p-4">
+                <div class="admin-stats-icon mb-3">
+                    <svg class="admin-stats-svg-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21 11.5C21.3 12.3 21.5 13.1 21.5 14C21.5 17.6 18.4 20.5 14.5 20.5C13.6 20.5 12.8 20.3 12 20L7 21L8 16C5.9 14.9 4.5 12.6 4.5 10C4.5 6.4 7.6 3.5 11.5 3.5C12.4 3.5 13.2 3.7 14 4" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <circle cx="8" cy="10" r="1" fill="currentColor"/>
+                        <circle cx="12" cy="10" r="1" fill="currentColor"/>
+                        <circle cx="16" cy="10" r="1" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div class="admin-stats-number">0</div>
+                <div class="admin-stats-label">Analytics</div>
+                <div class="mt-3">
+                    <a href="{{ url_for('admin_analytics') }}" class="btn btn-outline-orange btn-sm">
+                        <i class="fas fa-chart-bar me-1"></i>Lihat Analytics
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Row -->
+<div class="row">
+    <!-- Quick Actions -->
+    <div class="col-lg-6 mb-4">
+        <div class="card border-0 h-100 shadow-sm">
+            <div class="card-header bg-orange text-white border-0">
+                <h5 class="mb-0">
+                    <svg class="admin-svg-icon me-2" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="2" fill="currentColor"/>
+                    </svg>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <a href="{{ url_for('admin_add_product') }}" class="btn btn-orange w-100 py-3">
+                            <svg class="admin-svg-icon mb-2 d-block" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <path d="M12 8V16M8 12H16" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <strong>Tambah Produk</strong>
+                            <small class="d-block text-white-50">Produk musik baru</small>
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="{{ url_for('admin_categories') }}" class="btn btn-outline-orange w-100 py-3">
+                            <svg class="admin-svg-icon mb-2 d-block" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="3" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <rect x="14" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <rect x="3" y="14" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <rect x="14" y="14" width="7" height="7" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                            </svg>
+                            <strong>Kelola Kategori</strong>
+                            <small class="d-block">Atur kategori produk</small>
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="{{ url_for('admin_analytics') }}" class="btn btn-outline-orange w-100 py-3">
+                            <svg class="admin-svg-icon mb-2 d-block" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3 13.125C3 12.504 3.504 12 4.125 12H5.625C6.246 12 6.75 12.504 6.75 13.125V19.875C6.75 20.496 6.246 21 5.625 21H4.125C3.504 21 3 20.496 3 19.875V13.125Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <path d="M9.75 8.625C9.75 8.004 10.254 7.5 10.875 7.5H12.375C12.996 7.5 13.5 8.004 13.5 8.625V19.875C13.5 20.496 12.996 21 12.375 21H10.875C10.254 21 9.75 20.496 9.75 19.875V8.625Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <path d="M16.5 4.125C16.5 3.504 17.004 3 17.625 3H19.125C19.746 3 20.25 3.504 20.25 4.125V19.875C20.25 20.496 19.746 21 19.125 21H17.625C17.004 21 16.5 20.496 16.5 19.875V4.125Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                            </svg>
+                            <strong>Analytics</strong>
+                            <small class="d-block">Lihat statistik</small>
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        {% if current_user.is_admin %}
+                        <a href="{{ url_for('admin_users') }}" class="btn btn-outline-orange w-100 py-3">
+                            <svg class="admin-svg-icon mb-2 d-block" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="8" cy="7" r="4" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <path d="M2 21V19C2 15.1 5.1 12 9 12H7C10.9 12 14 15.1 14 19V21H2Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <circle cx="17" cy="8" r="3" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <path d="M22 21V20C22 17.8 20.2 16 18 16C16.8 16 15.7 16.4 14.9 17.1" stroke="currentColor" stroke-width="2" fill="none"/>
+                            </svg>
+                            <strong>Kelola User</strong>
+                            <small class="d-block">Manajemen pengguna</small>
+                        </a>
+                        {% else %}
+                        <div class="btn btn-outline-secondary w-100 py-3 disabled">
+                            <svg class="admin-svg-icon mb-2 d-block" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <circle cx="12" cy="16" r="1" fill="currentColor"/>
+                                <path d="M7 11V7C7 5.3 8.3 4 10 4H14C15.7 4 17 5.3 17 7V11" stroke="currentColor" stroke-width="2" fill="none"/>
+                            </svg>
+                            <strong>Kelola User</strong>
+                            <small class="d-block">Admin Only</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if current_user.role in ['admin', 'staff'] %}
+                    <div class="col-md-6">
+                        <a href="{{ url_for('cashier_dashboard') }}" class="btn btn-success w-100 py-3">
+                            <svg class="admin-svg-icon mb-2 d-block" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="2" y="6" width="20" height="12" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <rect x="6" y="10" width="12" height="4" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <circle cx="18" cy="4" r="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <path d="M10 2V6M14 2V6" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <strong>Kasir POS</strong>
+                            <small class="d-block text-white-50">Point of Sale</small>
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="col-md-6">
+                        <div class="btn btn-outline-secondary w-100 py-3 disabled">
+                            <svg class="admin-svg-icon mb-2 d-block" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <circle cx="12" cy="16" r="1" fill="currentColor"/>
+                                <path d="M7 11V7C7 5.3 8.3 4 10 4H14C15.7 4 17 5.3 17 7V11" stroke="currentColor" stroke-width="2" fill="none"/>
+                            </svg>
+                            <strong>Kasir POS</strong>
+                            <small class="d-block">Admin & Staff Only</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="col-md-6">
+                        <a href="{{ url_for('admin_orders') }}" class="btn btn-outline-orange w-100 py-3">
+                            <svg class="admin-svg-icon mb-2 d-block" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <path d="M9 9H15M9 13H15M9 17H12" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <strong>Kelola Pesanan</strong>
+                            <small class="d-block">Manajemen order</small>
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a href="{{ url_for('admin_chat') }}" class="btn btn-outline-orange w-100 py-3">
+                            <svg class="admin-svg-icon mb-2 d-block" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M21 11.5C21.3 12.3 21.5 13.1 21.5 14C21.5 17.6 18.4 20.5 14.5 20.5C13.6 20.5 12.8 20.3 12 20L7 21L8 16C5.9 14.9 4.5 12.6 4.5 10C4.5 6.4 7.6 3.5 11.5 3.5C12.4 3.5 13.2 3.7 14 4" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <circle cx="8" cy="10" r="1" fill="currentColor"/>
+                                <circle cx="12" cy="10" r="1" fill="currentColor"/>
+                                <circle cx="16" cy="10" r="1" fill="currentColor"/>
+                            </svg>
+                            <strong>Customer Service</strong>
+                            <small class="d-block">Balas chat pembeli</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Orders -->
+    <div class="col-lg-6 mb-4">
+        <div class="card border-0 h-100 shadow-sm">
+            <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #FF6B35 0%, #FF8C42 100%); color: white;">
+                <h5 class="mb-0">
+                    <svg class="admin-svg-icon me-2" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="6" y="11" width="12" height="12" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <circle cx="9" cy="9" r="1" fill="currentColor"/>
+                        <path d="M7 1L5.5 4.5L2 6.5L5.5 8.5L7 12L8.5 8.5L12 6.5L8.5 4.5L7 1Z" stroke="currentColor" stroke-width="2" fill="currentColor"/>
+                    </svg>Pesanan Terbaru
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_orders %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="px-4 py-3">Order ID</th>
+                                    <th class="py-3">Pelanggan</th>
+                                    <th class="py-3">Total</th>
+                                    <th class="py-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order in recent_orders %}
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <strong class="text-orange">#{{ order.id }}</strong>
+                                    </td>
+                                    <td class="py-3">
+                                        <div>
+                                            <strong>{{ order.user.name }}</strong>
+                                            <small class="d-block text-muted">{{ order.user.email[:20] }}...</small>
+                                        </div>
+                                    </td>
+                                    <td class="py-3">
+                                        <strong class="text-success">{{ order.formatted_total }}</strong>
+                                    </td>
+                                    <td class="py-3">
+                                        {% if order.status == 'paid' %}
+                                            <span class="badge bg-success px-3 py-1">
+                                                <svg class="admin-svg-icon me-1" width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" fill="none"/>
+                                                </svg>Dibayar
+                                            </span>
+                                        {% elif order.status == 'shipped' %}
+                                            <span class="badge bg-info px-3 py-1">
+                                                <svg class="admin-svg-icon me-1" width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <rect x="1" y="8" width="22" height="13" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                                    <rect x="1" y="3" width="6" height="5" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>
+                                                    <circle cx="6" cy="17" r="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                                    <circle cx="18" cy="17" r="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                                </svg>Dikirim
+                                            </span>
+                                        {% elif order.status == 'delivered' %}
+                                            <span class="badge bg-primary px-3 py-1">
+                                                <svg class="admin-svg-icon me-1" width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                                                    <path d="M12 8V16M8 12H16" stroke="currentColor" stroke-width="2"/>
+                                                </svg>Sampai
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning px-3 py-1">
+                                                <svg class="admin-svg-icon me-1" width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                                                    <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2"/>
+                                                </svg>Pending
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="card-footer bg-light text-center border-0">
+                        <a href="{{ url_for('admin_orders') }}" class="btn btn-outline-orange">
+                            <svg class="admin-svg-icon me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" fill="none"/>
+                            </svg>Lihat Semua Pesanan
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <svg class="admin-svg-icon mb-3" width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="color: #6c757d;">
+                            <rect x="6" y="11" width="12" height="12" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                            <circle cx="9" cy="9" r="1" fill="currentColor"/>
+                            <path d="M7 1L5.5 4.5L2 6.5L5.5 8.5L7 12L8.5 8.5L12 6.5L8.5 4.5L7 1Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                        </svg>
+                        <h6 class="text-muted">Belum ada pesanan</h6>
+                        <p class="text-muted small mb-4">Pesanan akan muncul di sini ketika pelanggan melakukan pembelian</p>
+                        <a href="{{ url_for('admin_products') }}" class="btn btn-outline-orange">
+                            <svg class="admin-svg-icon me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <path d="M12 8V16M8 12H16" stroke="currentColor" stroke-width="2"/>
+                            </svg>Tambah Produk
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sales Analytics Cards -->
+<div class="row mt-4">
+    <div class="col-md-6 mb-3">
+        <div class="card border-0" style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);">
+            <div class="card-body py-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-success mb-1">Penjualan Hari Ini</h6>
+                        <h4 class="text-success mb-0">Rp {{ "{:,.0f}".format(today_sales|float).replace(',', '.') }}</h4>
+                    </div>
+                    <svg class="admin-svg-icon text-success" width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <rect x="7" y="2" width="10" height="4" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M8 14L12 10L16 14" stroke="currentColor" stroke-width="2" fill="none"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="card border-0" style="background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);">
+            <div class="card-body py-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-info mb-1">Penjualan Bulan Ini</h6>
+                        <h4 class="text-info mb-0">Rp {{ "{:,.0f}".format(monthly_sales|float).replace(',', '.') }}</h4>
+                    </div>
+                    <svg class="admin-svg-icon text-info" width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <rect x="7" y="2" width="10" height="4" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M7 8H17M7 12H17M7 16H12" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Best Selling Products -->
+{% if best_selling_products %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-orange text-white">
+                <h5 class="mb-0">
+                    <svg class="admin-svg-icon me-2" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8.5 14.5L2 2L14.5 8.5L22 2L15.5 22L8.5 14.5Z" stroke="currentColor" stroke-width="2" fill="currentColor"/>
+                    </svg>Produk Terlaris
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for product in best_selling_products %}
+                    <div class="col-md-2 text-center mb-3">
+                        <div class="p-3 border rounded">
+                            <svg class="admin-svg-icon text-orange mb-2" width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="2" y="3" width="20" height="14" rx="3" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <rect x="8" y="21" width="8" height="2" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>
+                                <rect x="12" y="17" width="0" height="4" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <h6 class="mb-1">{{ product.name[:20] }}{% if product.name|length > 20 %}...{% endif %}</h6>
+                            <span class="badge bg-success">{{ product.total_sold }} terjual</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('admin_analytics') }}" class="btn btn-outline-orange">
+                        <svg class="admin-svg-icon me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="3" y="12" width="4" height="9" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>
+                            <rect x="10" y="8" width="4" height="13" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>
+                            <rect x="17" y="4" width="4" height="17" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>
+                        </svg>Lihat Analisis Lengkap
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Add some interactivity to the dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    // Add hover effects to stats cards
+    const statsCards = document.querySelectorAll('.admin-stats-card');
+    statsCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-8px)';
+        });
+
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+
+});
+</script>
+{% endblock %}

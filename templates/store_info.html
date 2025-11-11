@@ -1,0 +1,179 @@
+{% extends "base.html" %} {% block title %}Info Toko - Hurtrock Music Store{%
+endblock %} {% block content %}
+<div
+  class="container-fluid"
+  style="max-width: 1400px; margin: 30px auto; padding: 0 20px"
+>
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card shadow-lg">
+        <div class="card-body">
+          <h1 class="text-orange mb-4">
+            <i class="fas fa-store me-3"></i>Hurtrock Music Store
+          </h1>
+
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <h5>
+                <i class="fas fa-map-marker-alt text-orange me-2"></i>Alamat
+                Cabang Bandung
+              </h5>
+              <p class="mb-3">
+                Jl Gegerkalong Girang Complex Darut Tauhid Kav 22<br />
+                Kota Bandung, Jawa Barat 40153<br />
+                Indonesia
+              </p>
+            </div>
+            <div class="col-md-6">
+              <h5>
+                <i class="fas fa-map-marker-alt text-orange me-2"></i>Alamat
+                Cabang Cimahi
+              </h5>
+              <p class="mb-3">
+                Jl. Ciawitali No.34, Citeureup, Kec. Cimahi Utara<br />
+                Kota Cimahi, Jawa Barat 40512<br />
+                Indonesia
+              </p>
+            </div>
+          </div>
+
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <h5>
+                <i class="fas fa-clock text-orange me-2"></i>Jam Operasional
+              </h5>
+              <table class="table table-sm">
+                <tr>
+                  <td><strong>Senin - Jumat</strong></td>
+                  <td>09:30 - 18:00</td>
+                </tr>
+                <tr>
+                  <td><strong>Sabtu</strong></td>
+                  <td>09:30 - 17:00</td>
+                </tr>
+                <tr class="text-danger">
+                  <td><strong>Minggu</strong></td>
+                  <td>Tutup</td>
+                </tr>
+              </table>
+            </div>
+            <div class="col-md-6">
+              <h5>
+                <i class="fas fa-info-circle text-orange me-2"></i>Tentang Kami
+              </h5>
+              <p>
+                Hurtrock Music Store adalah toko musik terpercaya yang
+                menyediakan berbagai alat musik berkualitas tinggi. Kami
+                melayani musisi dari berbagai level, mulai dari pemula hingga
+                profesional.
+              </p>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <h5><i class="fas fa-star text-orange me-2"></i>Keunggulan Kami</h5>
+            <div class="row">
+              <div class="col-md-6">
+                <ul class="list-unstyled">
+                  <li>
+                    <i class="fas fa-check-circle text-success me-2"></i>Produk
+                    original bergaransi
+                  </li>
+                  <li>
+                    <i class="fas fa-check-circle text-success me-2"></i>Harga
+                    kompetitif
+                  </li>
+                  <li>
+                    <i class="fas fa-check-circle text-success me-2"></i
+                    >Konsultasi gratis
+                  </li>
+                </ul>
+              </div>
+              <div class="col-md-6">
+                <ul class="list-unstyled">
+                  <li>
+                    <i class="fas fa-check-circle text-success me-2"></i
+                    >Pengiriman ke seluruh Indonesia
+                  </li>
+                  <li>
+                    <i class="fas fa-check-circle text-success me-2"></i>Service
+                    center terpercaya
+                  </li>
+                  <li>
+                    <i class="fas fa-check-circle text-success me-2"></i
+                    >Customer support 24/7
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-center">
+            <a
+              href="{{ url_for('products') }}"
+              class="btn btn-orange btn-lg me-3"
+            >
+              <i class="fas fa-shopping-bag me-2"></i>Jelajahi Produk
+            </a>
+            <a
+              href="https://wa.me/6282115558035"
+              target="_blank"
+              class="btn btn-success btn-lg"
+            >
+              <i class="fab fa-whatsapp me-2"></i>Hubungi WhatsApp
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="col-lg-4">
+      <div class="card shadow mb-4">
+        <div class="card-body">
+          <h5 class="text-orange mb-3">
+            <i class="fas fa-map me-2"></i>Lokasi Toko
+          </h5>
+
+          <!-- Lokasi Bandung -->
+          <div class="mb-4">
+            <h6 class="fw-bold text-center">Cabang Bandung</h6>
+            <div class="ratio ratio-16x9">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d990.3039319729876!2d107.58991134839017!3d-6.864731602335122!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e68e6bc5c8c14e1%3A0x248ddd049125106c!2sHurtrock%20Music%20Store%20Bandung!5e0!3m2!1sid!2sid!4v1759467700427!5m2!1sid!2sid"
+                width="100%"
+                height="250"
+                style="border: 0"
+                allowfullscreen=""
+                loading="lazy"
+              >
+              </iframe>
+            </div>
+          </div>
+
+          <!-- Lokasi Cimahi -->
+          <div>
+            <h6 class="fw-bold text-center">Cabang Cimahi</h6>
+            <div class="ratio ratio-16x9">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3961.1961042097337!2d107.5531853!3d-6.8670889!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e68e5b104b739c3%3A0xc1b8bb82e95656e1!2sHurtrock%20Music%20Store%20Cimahi!5e0!3m2!1sid!2sid!4v1761299904016!5m2!1sid!2sid"
+                width="100%"
+                height="250"
+                style="border: 0"
+                allowfullscreen=""
+                loading="lazy"
+              >
+              </iframe>
+            </div>
+          </div>
+
+          <p class="small text-muted mt-3">
+            <i class="fas fa-info-circle me-1"></i>
+            Kedua toko mudah diakses dengan kendaraan pribadi maupun umum.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

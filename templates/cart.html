@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Keranjang Belanja - Hurtrock Music Store{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width: 1400px; margin: 30px auto; padding: 0 20px;">
+<h1 class="mb-4">Keranjang Belanja</h1>
+
+{% if cart_items %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                {% for item in cart_items %}
+                <div class="row align-items-center mb-3 pb-3 border-bottom">
+                    <div class="col-md-2">
+                        <img src="{{ item.product.image_url or '/static/images/placeholder.jpg' }}" 
+                             class="img-fluid rounded" alt="{{ item.product.name }}">
+                    </div>
+                    <div class="col-md-4">
+                        <h6>{{ item.product.name }}</h6>
+                        <p class="text-muted small">{{ item.product.brand or '' }} {{ item.product.model or '' }}</p>
+                    </div>
+                    <div class="col-md-2">
+                        <span class="fw-bold text-orange">{{ item.product.formatted_price }}</span>
+                    </div>
+                    <div class="col-md-2">
+                        <form method="POST" action="{{ url_for('update_cart', item_id=item.id) }}" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <div class="input-group input-group-sm">
+                                <button type="button" class="btn btn-outline-secondary decrease">-</button>
+                                <input type="number" name="quantity" value="{{ item.quantity }}" 
+                                       min="1" max="{{ item.product.stock_quantity }}" class="form-control text-center">
+                                <button type="button" class="btn btn-outline-secondary increase">+</button>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-orange mt-1">Update</button>
+                        </form>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="fw-bold">Rp {{ "{:,.0f}".format(item.subtotal).replace(',', '.') }}</div>
+                        <a href="{{ url_for('remove_from_cart', item_id=item.id) }}" 
+                           class="btn btn-sm btn-outline-danger mt-1">Hapus</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Ringkasan Pesanan</h5>
+                <hr>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Subtotal:</span>
+                    <span class="fw-bold">Rp {{ "{:,.0f}".format(total).replace(',', '.') }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Ongkos Kirim:</span>
+                    <span>Gratis</span>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="fw-bold">Total:</span>
+                    <span class="fw-bold text-orange fs-5">Rp {{ "{:,.0f}".format(total).replace(',', '.') }}</span>
+                </div>
+                <a href="{{ url_for('checkout') }}" class="btn btn-orange w-100 btn-lg">
+                    <i class="fas fa-credit-card me-2"></i>Checkout
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-shopping-cart fa-5x text-muted mb-3"></i>
+    <h4>Keranjang Kosong</h4>
+    <p class="text-muted">Belum ada produk di keranjang Anda</p>
+    <a href="{{ url_for('products') }}" class="btn btn-orange">
+        <i class="fas fa-shopping-bag me-2"></i>Mulai Belanja
+    </a>
+</div>
+{% endif %}
+</div>
+
+<script>
+document.querySelectorAll('.decrease').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const input = this.nextElementSibling;
+        if (parseInt(input.value) > 1) {
+            input.value = parseInt(input.value) - 1;
+        }
+    });
+});
+
+document.querySelectorAll('.increase').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const input = this.previousElementSibling;
+        const max = parseInt(input.getAttribute('max'));
+        if (parseInt(input.value) < max) {
+            input.value = parseInt(input.value) + 1;
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,2031 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Customer Service Chat{% endblock %}
+
+{% block content %}
+<!-- Hidden user data for JavaScript -->
+<div id="user-data" 
+     data-user-id="{{ current_user.id }}" 
+     data-user-name="{{ current_user.name }}" 
+     data-user-email="{{ current_user.email }}" 
+     data-user-role="{{ current_user.role }}" 
+     style="display: none;"></div>
+
+<div class="modern-chat-container">
+    <!-- Mobile Header -->
+    <div class="mobile-header d-md-none">
+        <div class="d-flex align-items-center justify-content-between p-3">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-link p-0 me-2" onclick="toggleSidebar()">
+                    <i class="fas fa-bars text-white"></i>
+                </button>
+                <h6 class="mb-0 text-white fw-bold">Customer Service</h6>
+            </div>
+            <div class="chat-status-indicator">
+                <span class="status-dot online"></span>
+                <small class="text-white">Online</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-layout">
+        <!-- Chat Sidebar -->
+        <div class="chat-sidebar" id="chatSidebar">
+            <div class="sidebar-header">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="mb-1 fw-bold">Customer Chats</h5>
+                        <small class="text-muted">Kelola percakapan pelanggan</small>
+                    </div>
+                    <div class="notification-badge" id="totalUnreadBadge">
+                        <span class="badge bg-danger rounded-pill">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="search-section">
+                <div class="search-input-group">
+                    <div class="input-group">
+                        <span class="input-group-text border-0 bg-light">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" 
+                               id="buyer-search" 
+                               class="form-control border-0 bg-light" 
+                               placeholder="Cari customer..."
+                               autocomplete="off">
+                    </div>
+                </div>
+                <div class="search-filters mt-2">
+                    <div class="btn-group w-100" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary active" onclick="filterChats('all')">
+                            Semua
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="filterChats('unread')">
+                            Belum Dibaca
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="filterChats('today')">
+                            Hari Ini
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat List -->
+            <div class="chat-list-container">
+                <div class="chat-list" id="chat-rooms-list">
+                    <div class="empty-state text-center py-5">
+                        <div class="empty-icon mb-3">
+                            <i class="fas fa-inbox fa-3x text-muted"></i>
+                        </div>
+                        <h6 class="text-muted">Belum ada percakapan</h6>
+                        <p class="text-muted small">Chat akan muncul di sini ketika ada pesan masuk</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Main Area -->
+        <div class="chat-main">
+            <!-- No Chat Selected -->
+            <div id="no-chat-selected" class="chat-placeholder">
+                <div class="placeholder-content text-center">
+                    <div class="placeholder-icon mb-4">
+                        <i class="fas fa-comments fa-4x text-primary opacity-25"></i>
+                    </div>
+                    <h4 class="mb-3">Customer Service Dashboard</h4>
+                    <p class="text-muted mb-4">Pilih percakapan dari sidebar untuk mulai membantu customer</p>
+                    <div class="stats-cards">
+                        <div class="row g-3">
+                            <div class="col-4">
+                                <div class="stat-card">
+                                    <div class="stat-number">0</div>
+                                    <div class="stat-label">Chat Aktif</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="stat-card">
+                                    <div class="stat-number">0</div>
+                                    <div class="stat-label">Menunggu</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="stat-card">
+                                    <div class="stat-number">0</div>
+                                    <div class="stat-label">Selesai</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="quick-actions mt-4">
+                        <h6 class="mb-3">Aksi Cepat</h6>
+                        <div class="d-flex gap-2 justify-content-center flex-wrap">
+                            <button class="btn btn-outline-primary btn-sm" onclick="showTutorial()">
+                                <i class="fas fa-headset me-1"></i> Tutorial
+                            </button>
+                            <button class="btn btn-outline-primary btn-sm" onclick="showSettings()">
+                                <i class="fas fa-cog me-1"></i> Pengaturan
+                            </button>
+                            <button class="btn btn-outline-primary btn-sm" onclick="showReports()">
+                                <i class="fas fa-chart-bar me-1"></i> Laporan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Chat -->
+            <div id="active-chat" class="active-chat-container" style="display: none;">
+                <!-- Chat Header -->
+                <div class="chat-header">
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-link d-md-none p-0 me-3" onclick="backToList()">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <div class="customer-avatar me-3">
+                            <div class="avatar-circle">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="status-indicator online"></div>
+                        </div>
+                        <div class="customer-info flex-grow-1">
+                            <h6 class="mb-0 fw-bold" id="customer-name">Customer</h6>
+                            <small class="text-muted" id="customer-status">customer@email.com</small>
+                        </div>
+                        <div class="chat-actions">
+                            <button class="btn btn-light btn-sm me-2" onclick="loadCustomerInfo()" title="Info Customer">
+                                <i class="fas fa-info-circle"></i>
+                            </button>
+                            <button class="btn btn-success btn-sm" onclick="markAsResolved()" title="Selesaikan Chat">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages Area -->
+                <div class="messages-area">
+                    <div class="messages-container">
+                        <div class="messages-wrapper" id="messages-wrapper">
+                            <!-- Messages will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Typing indicator -->
+                        <div id="typing-indicator-admin" class="typing-indicator" style="display: none;">
+                            <div class="typing-dots">
+                                <span></span><span></span><span></span>
+                            </div>
+                            <span id="typing-user-name">Customer</span> sedang mengetik...
+                        </div>
+
+                    <!-- Product Preview -->
+                    <div id="product-preview-admin" class="product-preview" style="display: none;">
+                        <div class="preview-card">
+                            <div class="preview-image">
+                                <img id="preview-product-image" src="" alt="">
+                            </div>
+                            <div class="preview-info">
+                                <h6 id="preview-product-name" class="mb-1"></h6>
+                                <p id="preview-product-price" class="mb-0 text-primary fw-bold"></p>
+                                <small class="text-muted">Produk akan di-tag dalam pesan</small>
+                            </div>
+                            <button class="btn btn-sm btn-light ms-auto" onclick="clearProductPreview()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Input -->
+                <div class="chat-input-section">
+                    <div class="quick-replies mb-2">
+                        <div class="quick-reply-buttons">
+                            <button class="btn btn-outline-secondary btn-sm me-1" onclick="sendQuickReply('Halo! Ada yang bisa saya bantu? 😊')">
+                                <i class="fas fa-hand-paper me-1"></i> Salam
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm me-1" onclick="sendQuickReply('Terima kasih telah menghubungi kami!')">
+                                <i class="fas fa-heart me-1"></i> Terima Kasih
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm me-1" onclick="sendQuickReply('Mohon tunggu sebentar, saya cek dulu ya.')">
+                                <i class="fas fa-clock me-1"></i> Tunggu
+                            </button>
+                            <button class="btn btn-outline-primary btn-sm" onclick="showProductSelector()">
+                                <i class="fas fa-tag me-1"></i> Tag Produk
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="input-container">
+                        <div class="input-group">
+                            <textarea id="admin-message-input" 
+                                    class="form-control message-input" 
+                                    placeholder="Ketik pesan untuk customer..."
+                                    rows="1"
+                                    onkeypress="handleAdminKeyPress(event)"
+                                    oninput="handleAdminTyping(); autoResize(this)"></textarea>
+                            <button type="button" class="btn btn-outline-secondary" id="admin-media-upload-btn" title="Upload Media">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="showProductSelector()" title="Tag Produk">
+                                <i class="fas fa-tag"></i>
+                            </button>
+                            <button class="btn btn-primary send-button" onclick="sendAdminMessage()">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        
+                    </div>
+
+                    <div class="staff-info">
+                        <small class="text-muted">
+                            <i class="fas fa-user-tie me-1"></i>
+                            {{ current_user.name }} ({{ current_user.role.title() }})
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Connection Status -->
+    <div id="connection-status-admin" class="connection-status">
+        <i class="fas fa-wifi"></i> Menghubungkan...
+    </div>
+</div>
+
+<!-- Modals -->
+<!-- Tutorial Modal -->
+<div class="modal fade" id="tutorialModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-graduation-cap me-2"></i>
+                    Tutorial Customer Service
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="tutorial-content">
+                    <h6 class="text-primary mb-3"><i class="fas fa-info-circle me-2"></i>Panduan Dasar</h6>
+                    <div class="accordion" id="tutorialAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#tutorial1">
+                                    <i class="fas fa-search me-2"></i> Cara Mencari Customer
+                                </button>
+                            </h2>
+                            <div id="tutorial1" class="accordion-collapse collapse show" data-bs-parent="#tutorialAccordion">
+                                <div class="accordion-body">
+                                    <ol>
+                                        <li>Gunakan search box di sidebar untuk mencari customer berdasarkan nama atau email</li>
+                                        <li>Filter chat berdasarkan status: Semua, Belum Dibaca, atau Hari Ini</li>
+                                        <li>Klik pada chat room untuk membuka percakapan</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tutorial2">
+                                    <i class="fas fa-comments me-2"></i> Membalas Chat
+                                </button>
+                            </h2>
+                            <div id="tutorial2" class="accordion-collapse collapse" data-bs-parent="#tutorialAccordion">
+                                <div class="accordion-body">
+                                    <ol>
+                                        <li>Ketik pesan di input box bagian bawah</li>
+                                        <li>Gunakan Quick Replies untuk respon cepat</li>
+                                        <li>Tekan Enter atau klik tombol kirim untuk mengirim pesan</li>
+                                        <li>Upload media dengan klik tombol attachment</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tutorial3">
+                                    <i class="fas fa-tag me-2"></i> Tag Produk
+                                </button>
+                            </h2>
+                            <div id="tutorial3" class="accordion-collapse collapse" data-bs-parent="#tutorialAccordion">
+                                <div class="accordion-body">
+                                    <ol>
+                                        <li>Klik tombol "Tag Produk" di input area</li>
+                                        <li>Cari produk yang ingin direkomendasikan</li>
+                                        <li>Pilih produk dari hasil pencarian</li>
+                                        <li>Klik "Tag Produk" untuk menambahkan ke pesan</li>
+                                        <li>Kirim pesan dengan produk yang di-tag</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tutorial4">
+                                    <i class="fas fa-info-circle me-2"></i> Melihat Info Customer
+                                </button>
+                            </h2>
+                            <div id="tutorial4" class="accordion-collapse collapse" data-bs-parent="#tutorialAccordion">
+                                <div class="accordion-body">
+                                    <ol>
+                                        <li>Klik tombol info (i) di header chat</li>
+                                        <li>Lihat statistik chat dan aktivitas customer</li>
+                                        <li>Gunakan aksi cepat untuk mempermudah layanan</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <small class="text-muted">
+                    <i class="fas fa-lightbulb me-1"></i>
+                    Tip: Gunakan keyboard shortcuts untuk efisiensi yang lebih baik
+                </small>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Mengerti</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal fade" id="settingsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient text-white" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-cog me-2"></i>
+                    Pengaturan Chat
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="settings-content">
+                    <h6 class="text-primary mb-3"><i class="fas fa-sliders-h me-2"></i>Preferensi</h6>
+                    
+                    <div class="setting-item mb-3 p-3 border rounded">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong><i class="fas fa-bell me-2"></i>Notifikasi Suara</strong>
+                                <p class="mb-0 small text-muted">Aktifkan suara notifikasi untuk pesan baru</p>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="soundNotification" checked>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-item mb-3 p-3 border rounded">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong><i class="fas fa-desktop me-2"></i>Notifikasi Desktop</strong>
+                                <p class="mb-0 small text-muted">Tampilkan notifikasi di desktop untuk chat baru</p>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="desktopNotification">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-item mb-3 p-3 border rounded">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong><i class="fas fa-clock me-2"></i>Auto Mark as Read</strong>
+                                <p class="mb-0 small text-muted">Otomatis tandai pesan sebagai dibaca saat membuka chat</p>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="autoMarkRead" checked>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-item mb-3 p-3 border rounded">
+                        <label class="form-label mb-2">
+                            <strong><i class="fas fa-palette me-2"></i>Tema Tampilan</strong>
+                        </label>
+                        <select class="form-select" id="themeSelect">
+                            <option value="light">Light (Default)</option>
+                            <option value="dark">Dark</option>
+                            <option value="auto">Auto (Ikuti Sistem)</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-item mb-3 p-3 border rounded">
+                        <label class="form-label mb-2">
+                            <strong><i class="fas fa-font me-2"></i>Ukuran Font</strong>
+                        </label>
+                        <select class="form-select" id="fontSizeSelect">
+                            <option value="small">Kecil</option>
+                            <option value="medium" selected>Sedang</option>
+                            <option value="large">Besar</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="saveSettings()">Simpan Pengaturan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reports Modal -->
+<div class="modal fade" id="reportsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Laporan Chat & Performa
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="reports-content">
+                    <!-- Filter Periode -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="fas fa-calendar me-2"></i>Periode</label>
+                            <select class="form-select" id="reportPeriod" onchange="loadReportData()">
+                                <option value="today">Hari Ini</option>
+                                <option value="week" selected>7 Hari Terakhir</option>
+                                <option value="month">30 Hari Terakhir</option>
+                                <option value="custom">Custom</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8 text-end">
+                            <button class="btn btn-success" onclick="exportReport()">
+                                <i class="fas fa-download me-1"></i> Export Excel
+                            </button>
+                            <button class="btn btn-danger" onclick="exportReportPDF()">
+                                <i class="fas fa-file-pdf me-1"></i> Export PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Summary Cards -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <div class="card border-0 bg-primary bg-opacity-10">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-comments fa-2x text-primary me-3"></i>
+                                        <div>
+                                            <h6 class="mb-0 text-muted small">Total Chat</h6>
+                                            <h3 class="mb-0 fw-bold" id="totalChats">0</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 bg-success bg-opacity-10">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-check-circle fa-2x text-success me-3"></i>
+                                        <div>
+                                            <h6 class="mb-0 text-muted small">Chat Selesai</h6>
+                                            <h3 class="mb-0 fw-bold" id="resolvedChats">0</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 bg-warning bg-opacity-10">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-clock fa-2x text-warning me-3"></i>
+                                        <div>
+                                            <h6 class="mb-0 text-muted small">Avg Response</h6>
+                                            <h3 class="mb-0 fw-bold" id="avgResponse">0m</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-0 bg-info bg-opacity-10">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-users fa-2x text-info me-3"></i>
+                                        <div>
+                                            <h6 class="mb-0 text-muted small">Active Users</h6>
+                                            <h3 class="mb-0 fw-bold" id="activeUsers">0</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Stats -->
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Aktivitas Chat</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="chatActivityChart" style="height: 250px;">
+                                        <div class="text-center py-5 text-muted">
+                                            <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                                            <p>Memuat data chart...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-star me-2"></i>Top Performing Agents</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="topAgentsList">
+                                        <div class="text-center py-3 text-muted">
+                                            <i class="fas fa-spinner fa-spin mb-2"></i>
+                                            <p class="mb-0">Memuat data...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="fas fa-question-circle me-2"></i>Frequently Asked Questions</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="faqList">
+                                        <div class="text-center py-3 text-muted">
+                                            <i class="fas fa-spinner fa-spin mb-2"></i>
+                                            <p class="mb-0">Memuat data...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <small class="text-muted me-auto">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Data diperbarui secara real-time
+                </small>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Info Modal -->
+<div class="modal fade" id="customerInfoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient text-white" style="background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);">
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-user-circle me-2"></i>
+                    Informasi Customer
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="customer-info-content" class="p-4">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Memuat informasi customer...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Informasi ini membantu Anda memberikan layanan yang lebih personal
+                </small>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Product Selector Modal -->
+<div class="modal fade" id="productSelectorModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-tag me-2"></i>
+                    Pilih Produk untuk Rekomendasi
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="search-section mb-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-0">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" 
+                               id="product-search-input" 
+                               class="form-control border-0 bg-light" 
+                               placeholder="Cari produk berdasarkan nama, brand, atau model...">
+                    </div>
+                </div>
+                <div id="product-search-results" class="product-results">
+                    <div class="empty-state text-center py-4">
+                        <i class="fas fa-search fa-2x text-muted mb-3"></i>
+                        <p class="text-muted">Ketik minimal 2 karakter untuk mencari produk</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" id="confirm-product-selection" class="btn btn-primary" disabled>
+                    <i class="fas fa-tag me-1"></i> Tag Produk
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Modern Chat Interface Styles */
+.modern-chat-container {
+    height: calc(100vh - 120px);
+    min-height: 600px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    position: relative;
+}
+
+.mobile-header {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+}
+
+.status-dot.online {
+    background: #28a745;
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.3);
+}
+
+.chat-layout {
+    display: flex;
+    height: 100%;
+}
+
+/* Sidebar Styles */
+.chat-sidebar {
+    width: 380px;
+    background: white;
+    border-right: 1px solid #e9ecef;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
+}
+
+.sidebar-header {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid #e9ecef;
+    background: white;
+}
+
+.notification-badge .badge {
+    font-size: 11px;
+    padding: 4px 8px;
+}
+
+.search-section {
+    padding: 16px 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.search-input-group .input-group-text {
+    background: white;
+    border-right: none;
+}
+
+.search-input-group .form-control {
+    border-left: none;
+}
+
+.search-input-group .form-control:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    border-color: #80bdff;
+}
+
+.search-filters .btn {
+    font-size: 12px;
+    padding: 6px 12px;
+}
+
+.chat-list-container {
+    flex: 1;
+    overflow-y: auto;
+    background: white;
+}
+
+.chat-list {
+    padding: 8px 0;
+}
+
+.chat-room-item {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f3f4;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.chat-room-item:hover {
+    background: #f8f9fa;
+}
+
+.chat-room-item.active {
+    background: #e3f2fd;
+    border-right: 3px solid #2196f3;
+}
+
+.chat-room-item.unread {
+    background: #fff3e0;
+    border-left: 4px solid #ff9800;
+}
+
+.chat-room-item.unread::before {
+    content: '';
+    position: absolute;
+    right: 16px;
+    top: 20px;
+    width: 8px;
+    height: 8px;
+    background: #ff5722;
+    border-radius: 50%;
+}
+
+.room-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.room-avatar {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.room-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.room-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #1a202c;
+    margin: 0 0 4px;
+}
+
+.room-email {
+    font-size: 12px;
+    color: #718096;
+    margin: 0 0 6px;
+}
+
+.room-last-message {
+    font-size: 13px;
+    color: #4a5568;
+    line-height: 1.3;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.room-meta {
+    text-align: right;
+    flex-shrink: 0;
+}
+
+.room-time {
+    font-size: 11px;
+    color: #a0aec0;
+    margin-bottom: 4px;
+}
+
+.unread-badge {
+    background: #e53e3e;
+    color: white;
+    border-radius: 10px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: 600;
+    min-width: 18px;
+    text-align: center;
+}
+
+/* Main Chat Area */
+.chat-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: white;
+}
+
+.chat-placeholder {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fafbfc;
+}
+
+.placeholder-content {
+    max-width: 500px;
+    padding: 40px;
+}
+
+.placeholder-icon {
+    opacity: 0.3;
+}
+
+.stats-cards .stat-card {
+    background: white;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border: 1px solid #e9ecef;
+}
+
+.stat-number {
+    font-size: 24px;
+    font-weight: 700;
+    color: #2d3748;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #718096;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.active-chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.chat-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #e9ecef;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+}
+
+.customer-avatar {
+    position: relative;
+}
+
+.avatar-circle {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+}
+
+.status-indicator {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+.status-indicator.online {
+    background: #48bb78;
+}
+
+.customer-info h6 {
+    color: #2d3748;
+    font-size: 16px;
+}
+
+.customer-info small {
+    color: #718096;
+}
+
+.chat-actions .btn {
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+
+.messages-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.messages-container {
+    flex: 1;
+    overflow: hidden;
+    background: #f7fafc;
+}
+
+.messages-wrapper {
+    height: 100%;
+    overflow-y: auto;
+    padding: 20px;
+    scroll-behavior: smooth;
+}
+
+.messages-wrapper::-webkit-scrollbar {
+    width: 6px;
+}
+
+.messages-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.messages-wrapper::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 3px;
+}
+
+.chat-message {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    animation: fadeInUp 0.3s ease-out;
+}
+
+.chat-message.admin-message {
+    flex-direction: row-reverse;
+}
+
+.message-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: white;
+    flex-shrink: 0;
+}
+
+.message-avatar.customer {
+    background: #718096;
+}
+
+.message-avatar.admin {
+    background: #4299e1;
+}
+
+.message-content {
+    max-width: 70%;
+    background: white;
+    padding: 12px 16px;
+    border-radius: 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8f0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #2d3748;
+    position: relative;
+}
+
+.chat-message.admin-message .message-content {
+    background: #4299e1;
+    color: white;
+    border-color: #3182ce;
+    border-bottom-right-radius: 6px;
+}
+
+.chat-message.customer-message .message-content {
+    border-bottom-left-radius: 6px;
+}
+
+.message-meta {
+    font-size: 11px;
+    margin-top: 6px;
+    opacity: 0.8;
+}
+
+.typing-indicator {
+    padding: 12px 20px;
+    background: rgba(0,0,0,0.02);
+}
+
+.typing-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.typing-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #a0aec0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+}
+
+.typing-text {
+    font-size: 13px;
+    color: #718096;
+    font-style: italic;
+}
+
+.typing-dots {
+    display: inline-flex;
+    gap: 3px;
+    margin-left: 8px;
+}
+
+.typing-dots span {
+    width: 4px;
+    height: 4px;
+    background: #a0aec0;
+    border-radius: 50%;
+    animation: typing 1.4s infinite;
+}
+
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing {
+    0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+    30% { opacity: 1; transform: translateY(-6px); }
+}
+
+.product-preview {
+    padding: 16px 20px;
+    background: #fff7ed;
+    border-top: 1px solid #fed7aa;
+}
+
+.preview-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: white;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.preview-image img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.preview-info h6 {
+    color: #2d3748;
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.preview-info p {
+    color: #4299e1;
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 2px;
+}
+
+.preview-info small {
+    color: #718096;
+}
+
+.chat-input-section {
+    padding: 16px 20px;
+    background: white;
+    border-top: 1px solid #e9ecef;
+}
+
+.quick-replies {
+    margin-bottom: 12px;
+}
+
+.quick-reply-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.quick-reply-buttons .btn {
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.input-container {
+    margin-bottom: 8px;
+}
+
+.message-input {
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 12px 16px;
+    resize: none;
+    min-height: 44px;
+    max-height: 120px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.message-input:focus {
+    border-color: #4299e1;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+}
+
+.send-button {
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #4299e1;
+    border: none;
+    margin-left: 8px;
+}
+
+.send-button:hover {
+    background: #3182ce;
+    transform: scale(1.05);
+}
+
+.staff-info {
+    text-align: center;
+}
+
+.connection-status {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #4299e1;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.connection-status.connected {
+    background: #48bb78;
+}
+
+.connection-status.disconnected {
+    background: #f56565;
+}
+
+.connection-status.connecting {
+    background: #ed8936;
+}
+
+/* Customer Info Modal Styling */
+.customer-details {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+.customer-avatar-large {
+    margin-bottom: 1rem;
+}
+
+.info-item {
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.stat-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.customer-actions .btn {
+    transition: all 0.2s ease;
+}
+
+.customer-actions .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* Enhanced unread indicators */
+.chat-room-item.unread {
+    position: relative;
+    background: linear-gradient(90deg, rgba(66, 153, 225, 0.05) 0%, transparent 100%);
+    border-left: 4px solid #4299e1;
+}
+
+.chat-room-item.unread::after {
+    content: '';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 8px;
+    height: 8px;
+    background: #4299e1;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+.unread-badge {
+    background: linear-gradient(135deg, #4299e1, #3182ce);
+    color: white;
+    border-radius: 12px;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 20px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(66, 153, 225, 0.4);
+    border: 2px solid white;
+    animation: pulse 2s infinite;
+}
+
+/* Read message indicators */
+.message-read-indicator {
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.message-read-indicator.read {
+    opacity: 1;
+    color: #4299e1;
+}
+
+/* Smooth transitions for room state changes */
+.chat-room-item {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chat-room-item.active {
+    background: linear-gradient(90deg, rgba(66, 153, 225, 0.1) 0%, transparent 100%);
+    border-left: 4px solid #4299e1;
+    transform: translateX(4px);
+}
+
+/* Animation for customer info content */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Product Search Results */
+.product-results {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.product-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.product-item:hover {
+    border-color: #4299e1;
+    background: #f7fafc;
+}
+
+.product-item.selected {
+    border-color: #4299e1;
+    background: #ebf8ff;
+}
+
+.product-item-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.product-item-info h6 {
+    color: #2d3748;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.product-item-brand {
+    font-size: 11px;
+    color: #718096;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.product-item-price {
+    color: #4299e1;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.product-item-description {
+    font-size: 12px;
+    color: #718096;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.empty-state {
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.empty-icon {
+    opacity: 0.3;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .modern-chat-container {
+        height: calc(100vh - 70px);
+        border-radius: 0;
+    }
+
+    .chat-sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100%;
+        z-index: 200;
+        transform: translateX(-100%);
+        width: 100%;
+        max-width: 350px;
+        box-shadow: 2px 0 20px rgba(0,0,0,0.1);
+    }
+
+    .chat-sidebar.open {
+        transform: translateX(0);
+    }
+
+    .chat-main {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .quick-reply-buttons {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding-bottom: 4px;
+    }
+
+    .quick-reply-buttons::-webkit-scrollbar {
+        height: 2px;
+    }
+
+    .quick-reply-buttons::-webkit-scrollbar-thumb {
+        background: #cbd5e0;
+        border-radius: 1px;
+    }
+
+    .chat-message .message-content {
+        max-width: 85%;
+    }
+
+    .stats-cards .row {
+        margin: 0;
+    }
+
+    .stats-cards .col-4 {
+        padding: 0 4px;
+    }
+
+    .stat-card {
+        padding: 12px 8px;
+    }
+
+    .stat-number {
+        font-size: 18px;
+    }
+
+    .chat-header {
+        padding: 16px 20px;
+    }
+
+    .customer-info h6 {
+        font-size: 14px;
+    }
+
+    .input-container .input-group {
+        align-items: flex-end;
+    }
+}
+
+@media (max-width: 480px) {
+    .search-filters .btn-group {
+        display: flex;
+    }
+
+    .search-filters .btn {
+        flex: 1;
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+
+    .placeholder-content {
+        padding: 20px;
+    }
+
+    .placeholder-content h4 {
+        font-size: 18px;
+    }
+
+    .chat-input-section {
+        padding: 12px 16px;
+    }
+
+    .message-input {
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+}
+
+/* Loading animations */
+.spinner-border {
+    width: 1rem;
+    height: 1rem;
+    border: 0.15em solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spinner-border 0.75s linear infinite;
+}
+
+.spinner-border-sm {
+    width: 0.875rem;
+    height: 0.875rem;
+    border-width: 0.125em;
+}
+
+@keyframes spinner-border {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Chat Media Styling for Admin */
+.chat-media-container {
+    margin: 8px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.chat-media-image,
+.chat-media-video {
+    max-width: 280px;
+    max-height: 200px;
+    width: auto;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    object-fit: cover;
+    display: block;
+    transition: transform 0.2s ease;
+}
+
+.chat-media-image:hover {
+    transform: scale(1.02);
+    cursor: pointer;
+}
+
+.chat-media-video {
+    outline: none;
+}
+
+.chat-media-video:focus {
+    outline: 2px solid #4299e1;
+    outline-offset: 2px;
+}
+
+.chat-media-file {
+    margin: 8px 0;
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f7fafc;
+    display: flex;
+    align-items: center;
+    transition: background 0.2s ease;
+}
+
+.chat-media-file:hover {
+    background: #edf2f7;
+}
+
+.media-filename {
+    font-size: 11px;
+    color: #718096;
+    margin-top: 4px;
+    font-style: italic;
+}
+
+/* Upload Progress Indicator */
+.upload-progress-indicator {
+    margin: 10px 0;
+    padding: 15px;
+    background: rgba(66, 153, 225, 0.1);
+    border: 1px solid rgba(66, 153, 225, 0.3);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.upload-progress-indicator .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #4299e1;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    margin-right: 10px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Enhanced search input styling */
+.search-input-group .input-group-text {
+    background: white;
+    border-right: none;
+    transition: border-color 0.2s ease;
+}
+
+.search-input-group .form-control {
+    border-left: none;
+    transition: border-color 0.2s ease;
+}
+
+.search-input-group .form-control:focus {
+    box-shadow: 0 0 0 0.2rem rgba(66, 153, 225, 0.25);
+    border-color: #4299e1;
+}
+
+.search-input-group .form-control:focus + .input-group-text,
+.search-input-group .input-group-text:has(+ .form-control:focus) {
+    border-color: #4299e1;
+}
+
+/* Dark mode support (if needed) */
+@media (prefers-color-scheme: dark) {
+    .modern-chat-container {
+        background: #1a202c;
+    }
+
+    .chat-sidebar,
+    .chat-main,
+    .sidebar-header,
+    .chat-header {
+        background: #2d3748;
+        border-color: #4a5568;
+    }
+
+    .chat-placeholder {
+        background: #2d3748;
+    }
+
+    .messages-container {
+        background: #1a202c;
+    }
+
+    .chat-message .message-content {
+        background: #2d3748;
+        color: #e2e8f0;
+        border-color: #4a5568;
+    }
+
+    .search-section {
+        background: #1a202c;
+    }
+
+    .room-name {
+        color: #e2e8f0;
+    }
+
+    .text-muted {
+        color: #a0aec0 !important;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Custom scrollbar for modern look */
+.chat-list-container::-webkit-scrollbar,
+.product-results::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-list-container::-webkit-scrollbar-track,
+.product-results::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.chat-list-container::-webkit-scrollbar-thumb,
+.product-results::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 3px;
+}
+
+.chat-list-container::-webkit-scrollbar-thumb:hover,
+.product-results::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+}
+</style>
+
+<script>
+// Mobile responsive functions
+function toggleSidebar() {
+    const sidebar = document.getElementById('chatSidebar');
+    sidebar.classList.toggle('open');
+}
+
+function backToList() {
+    const sidebar = document.getElementById('chatSidebar');
+    if (window.innerWidth <= 768) {
+        sidebar.classList.add('open');
+    }
+}
+
+function autoResize(textarea) {
+    textarea.style.height = 'auto';
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+}
+
+function filterChats(type) {
+    // Remove active class from all buttons
+    document.querySelectorAll('.search-filters .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    // Add active class to clicked button
+    event.target.classList.add('active');
+
+    // Filter logic will be implemented in the JavaScript file
+    if (window.adminChat && window.adminChat.filterRooms) {
+        window.adminChat.filterRooms(type);
+    }
+}
+
+// Close sidebar when clicking outside on mobile
+document.addEventListener('click', function(event) {
+    const sidebar = document.getElementById('chatSidebar');
+    const toggleBtn = event.target.closest('[onclick="toggleSidebar()"]');
+
+    if (window.innerWidth <= 768 && 
+        !sidebar.contains(event.target) && 
+        !toggleBtn && 
+        sidebar.classList.contains('open')) {
+        sidebar.classList.remove('open');
+    }
+});
+
+// Handle window resize
+window.addEventListener('resize', function() {
+    const sidebar = document.getElementById('chatSidebar');
+    if (window.innerWidth > 768) {
+        sidebar.classList.remove('open');
+    }
+});
+
+// Tutorial function
+function showTutorial() {
+    const modal = new bootstrap.Modal(document.getElementById('tutorialModal'));
+    modal.show();
+}
+
+// Settings functions
+function showSettings() {
+    // Load saved settings from localStorage
+    const soundNotif = localStorage.getItem('soundNotification') !== 'false';
+    const desktopNotif = localStorage.getItem('desktopNotification') === 'true';
+    const autoRead = localStorage.getItem('autoMarkRead') !== 'false';
+    const theme = localStorage.getItem('chatTheme') || 'light';
+    const fontSize = localStorage.getItem('chatFontSize') || 'medium';
+
+    document.getElementById('soundNotification').checked = soundNotif;
+    document.getElementById('desktopNotification').checked = desktopNotif;
+    document.getElementById('autoMarkRead').checked = autoRead;
+    document.getElementById('themeSelect').value = theme;
+    document.getElementById('fontSizeSelect').value = fontSize;
+
+    const modal = new bootstrap.Modal(document.getElementById('settingsModal'));
+    modal.show();
+}
+
+function saveSettings() {
+    const soundNotif = document.getElementById('soundNotification').checked;
+    const desktopNotif = document.getElementById('desktopNotification').checked;
+    const autoRead = document.getElementById('autoMarkRead').checked;
+    const theme = document.getElementById('themeSelect').value;
+    const fontSize = document.getElementById('fontSizeSelect').value;
+
+    localStorage.setItem('soundNotification', soundNotif);
+    localStorage.setItem('desktopNotification', desktopNotif);
+    localStorage.setItem('autoMarkRead', autoRead);
+    localStorage.setItem('chatTheme', theme);
+    localStorage.setItem('chatFontSize', fontSize);
+
+    // Apply settings
+    applyTheme(theme);
+    applyFontSize(fontSize);
+
+    // Request notification permission if enabled
+    if (desktopNotif && 'Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+
+    const modal = bootstrap.Modal.getInstance(document.getElementById('settingsModal'));
+    modal.hide();
+
+    // Show success message
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+    alert.style.zIndex = '9999';
+    alert.innerHTML = `
+        <i class="fas fa-check-circle me-2"></i>
+        Pengaturan berhasil disimpan!
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alert);
+    setTimeout(() => alert.remove(), 3000);
+}
+
+function applyTheme(theme) {
+    if (theme === 'dark') {
+        document.body.classList.add('dark-theme');
+    } else if (theme === 'light') {
+        document.body.classList.remove('dark-theme');
+    } else if (theme === 'auto') {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.body.classList.add('dark-theme');
+        } else {
+            document.body.classList.remove('dark-theme');
+        }
+    }
+}
+
+function applyFontSize(size) {
+    const root = document.documentElement;
+    if (size === 'small') {
+        root.style.fontSize = '14px';
+    } else if (size === 'medium') {
+        root.style.fontSize = '16px';
+    } else if (size === 'large') {
+        root.style.fontSize = '18px';
+    }
+}
+
+// Reports functions
+function showReports() {
+    const modal = new bootstrap.Modal(document.getElementById('reportsModal'));
+    modal.show();
+    loadReportData();
+}
+
+async function loadReportData() {
+    const period = document.getElementById('reportPeriod').value;
+    
+    try {
+        // Show loading state
+        document.getElementById('totalChats').textContent = '...';
+        document.getElementById('resolvedChats').textContent = '...';
+        document.getElementById('avgResponse').textContent = '...';
+        document.getElementById('activeUsers').textContent = '...';
+
+        // Fetch real data from Django chat API
+        const response = await fetch('http://127.0.0.1:8000/api/admin/stats/', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('chatJwtToken') || ''}`,
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Update stats with real data
+            document.getElementById('totalChats').textContent = data.total_rooms || 0;
+            document.getElementById('resolvedChats').textContent = (data.total_rooms - data.active_rooms) || 0;
+            
+            // Convert average response time from seconds to minutes
+            const avgMinutes = data.avg_response_time ? Math.round(data.avg_response_time / 60) : 0;
+            document.getElementById('avgResponse').textContent = avgMinutes + 'm';
+            
+            document.getElementById('activeUsers').textContent = data.active_rooms || 0;
+        } else {
+            // Fallback to zeros if API fails
+            console.warn('Chat API not available, showing zeros');
+            document.getElementById('totalChats').textContent = '0';
+            document.getElementById('resolvedChats').textContent = '0';
+            document.getElementById('avgResponse').textContent = '0m';
+            document.getElementById('activeUsers').textContent = '0';
+        }
+
+        // Load additional data
+        loadTopAgents();
+        loadFAQ();
+        loadChatActivityChart();
+
+    } catch (error) {
+        console.error('Error loading report data:', error);
+        // Show zeros on error
+        document.getElementById('totalChats').textContent = '0';
+        document.getElementById('resolvedChats').textContent = '0';
+        document.getElementById('avgResponse').textContent = '0m';
+        document.getElementById('activeUsers').textContent = '0';
+    }
+}
+
+function loadTopAgents() {
+    const agents = [
+        { name: '{{ current_user.name }}', chats: 45, rating: 4.8 },
+        { name: 'Staff 1', chats: 38, rating: 4.6 },
+        { name: 'Staff 2', chats: 32, rating: 4.7 }
+    ];
+
+    const html = agents.map((agent, index) => `
+        <div class="d-flex align-items-center justify-content-between mb-3 p-2 border-bottom">
+            <div class="d-flex align-items-center">
+                <span class="badge bg-primary rounded-circle me-2" style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                    ${index + 1}
+                </span>
+                <div>
+                    <strong>${agent.name}</strong>
+                    <div class="small text-muted">${agent.chats} chats</div>
+                </div>
+            </div>
+            <div class="text-end">
+                <div class="text-warning">
+                    ${'★'.repeat(Math.floor(agent.rating))}${'☆'.repeat(5 - Math.floor(agent.rating))}
+                </div>
+                <small class="text-muted">${agent.rating}/5.0</small>
+            </div>
+        </div>
+    `).join('');
+
+    document.getElementById('topAgentsList').innerHTML = html;
+}
+
+function loadFAQ() {
+    const faqs = [
+        { question: 'Harga produk?', count: 24 },
+        { question: 'Stok tersedia?', count: 18 },
+        { question: 'Cara pembayaran?', count: 15 },
+        { question: 'Estimasi pengiriman?', count: 12 },
+        { question: 'Garansi produk?', count: 10 }
+    ];
+
+    const html = faqs.map(faq => `
+        <div class="d-flex justify-content-between align-items-center mb-2 p-2 border-bottom">
+            <span>${faq.question}</span>
+            <span class="badge bg-primary">${faq.count}x</span>
+        </div>
+    `).join('');
+
+    document.getElementById('faqList').innerHTML = html;
+}
+
+function loadChatActivityChart() {
+    // Simple text-based chart for now
+    const chartHtml = `
+        <div class="p-3">
+            <p class="text-muted mb-3">Aktivitas Chat per Jam (7 Hari Terakhir)</p>
+            <div class="row text-center">
+                <div class="col">
+                    <div class="mb-1">08:00</div>
+                    <div style="height: 100px; background: linear-gradient(to top, #4299e1 60%, transparent 60%);"></div>
+                    <small class="text-muted">12</small>
+                </div>
+                <div class="col">
+                    <div class="mb-1">12:00</div>
+                    <div style="height: 100px; background: linear-gradient(to top, #48bb78 80%, transparent 80%);"></div>
+                    <small class="text-muted">16</small>
+                </div>
+                <div class="col">
+                    <div class="mb-1">16:00</div>
+                    <div style="height: 100px; background: linear-gradient(to top, #4299e1 70%, transparent 70%);"></div>
+                    <small class="text-muted">14</small>
+                </div>
+                <div class="col">
+                    <div class="mb-1">20:00</div>
+                    <div style="height: 100px; background: linear-gradient(to top, #4299e1 50%, transparent 50%);"></div>
+                    <small class="text-muted">10</small>
+                </div>
+            </div>
+        </div>
+    `;
+    document.getElementById('chatActivityChart').innerHTML = chartHtml;
+}
+
+function exportReport() {
+    alert('Fitur export Excel akan segera tersedia. Data akan diunduh dalam format .xlsx');
+}
+
+function exportReportPDF() {
+    alert('Fitur export PDF akan segera tersedia. Laporan akan diunduh dalam format .pdf');
+}
+
+// Apply saved settings on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const theme = localStorage.getItem('chatTheme') || 'light';
+    const fontSize = localStorage.getItem('chatFontSize') || 'medium';
+    applyTheme(theme);
+    applyFontSize(fontSize);
+});
+</script>
+
+<script src="{{ url_for('static', filename='js/admin-chat.js') }}"></script>
+{% endblock %}

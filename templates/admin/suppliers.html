@@ -1,0 +1,240 @@
+
+{% extends "admin/base.html" %}
+
+{% block title %}Kelola Supplier - Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">
+        <svg class="admin-svg-icon me-2 text-orange" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 11V6C9 4.3 10.3 3 12 3S15 4.3 15 6V11" stroke="currentColor" stroke-width="2" fill="none"/>
+            <rect x="6" y="11" width="12" height="9" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+            <circle cx="12" cy="16" r="1" fill="currentColor"/>
+        </svg>Kelola Supplier
+    </h2>
+    <button class="btn btn-orange" data-bs-toggle="modal" data-bs-target="#addSupplierModal">
+        <svg class="admin-svg-icon me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+            <path d="M12 8V16M8 12H16" stroke="currentColor" stroke-width="2"/>
+        </svg>Tambah Supplier
+    </button>
+</div>
+
+<!-- Suppliers Table -->
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Nama Supplier</th>
+                        <th>Contact Person</th>
+                        <th>Email</th>
+                        <th>Telepon</th>
+                        <th>Perusahaan</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for supplier in suppliers %}
+                    <tr>
+                        <td>{{ supplier.id }}</td>
+                        <td>
+                            <strong>{{ supplier.name }}</strong>
+                            {% if supplier.notes %}
+                                <br><small class="text-muted">{{ supplier.notes[:50] }}{% if supplier.notes|length > 50 %}...{% endif %}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ supplier.contact_person or '-' }}</td>
+                        <td>{{ supplier.email or '-' }}</td>
+                        <td>{{ supplier.phone or '-' }}</td>
+                        <td>{{ supplier.company or '-' }}</td>
+                        <td>
+                            {% if supplier.is_active %}
+                                <span class="badge bg-success">Aktif</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Nonaktif</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" onclick="editSupplier({{ supplier.id }})" data-bs-toggle="modal" data-bs-target="#editSupplierModal">
+                                    <svg class="admin-svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M11 4H4C3.4 4 3 4.4 3 5V20C3 20.6 3.4 21 4 21H19C19.6 21 20 20.6 20 20V13" stroke="currentColor" stroke-width="2" fill="none"/>
+                                        <path d="M18.5 2.5C19.3 1.7 20.7 1.7 21.5 2.5S22.3 4.7 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    </svg>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="deleteSupplier({{ supplier.id }}, '{{ supplier.name }}')">
+                                    <svg class="admin-svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M3 6H5H21" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M8 6V4C8 3.4 8.4 3 9 3H15C15.6 3 16 3.4 16 4V6M19 6V20C19 20.6 18.6 21 18 21H6C5.4 21 5 20.6 5 20V6H19Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Supplier Modal -->
+<div class="modal fade" id="addSupplierModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tambah Supplier Baru</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin_add_supplier') }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Nama Supplier *</label>
+                                <input type="text" class="form-control" name="name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Contact Person</label>
+                                <input type="text" class="form-control" name="contact_person">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" name="email">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Telepon</label>
+                                <input type="text" class="form-control" name="phone">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nama Perusahaan</label>
+                        <input type="text" class="form-control" name="company">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Alamat</label>
+                        <textarea class="form-control" name="address" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Catatan</label>
+                        <textarea class="form-control" name="notes" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-orange">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Supplier Modal -->
+<div class="modal fade" id="editSupplierModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Supplier</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editSupplierForm" method="POST">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Nama Supplier *</label>
+                                <input type="text" class="form-control" name="name" id="edit_name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Contact Person</label>
+                                <input type="text" class="form-control" name="contact_person" id="edit_contact_person">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" name="email" id="edit_email">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Telepon</label>
+                                <input type="text" class="form-control" name="phone" id="edit_phone">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nama Perusahaan</label>
+                        <input type="text" class="form-control" name="company" id="edit_company">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Alamat</label>
+                        <textarea class="form-control" name="address" id="edit_address" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Catatan</label>
+                        <textarea class="form-control" name="notes" id="edit_notes" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="is_active" id="edit_is_active">
+                            <label class="form-check-label" for="edit_is_active">Status Aktif</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-orange">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+const suppliers = {{ suppliers_data | tojson }};
+
+function editSupplier(supplierId) {
+    const supplier = suppliers.find(s => s.id === supplierId);
+    if (supplier) {
+        document.getElementById('edit_name').value = supplier.name || '';
+        document.getElementById('edit_contact_person').value = supplier.contact_person || '';
+        document.getElementById('edit_email').value = supplier.email || '';
+        document.getElementById('edit_phone').value = supplier.phone || '';
+        document.getElementById('edit_company').value = supplier.company || '';
+        document.getElementById('edit_address').value = supplier.address || '';
+        document.getElementById('edit_notes').value = supplier.notes || '';
+        document.getElementById('edit_is_active').checked = supplier.is_active;
+        
+        document.getElementById('editSupplierForm').action = `{{ url_for('admin_edit_supplier', supplier_id=0) }}`.replace('0', supplierId);
+    }
+}
+
+function deleteSupplier(supplierId, supplierName) {
+    if (confirm(`Apakah Anda yakin ingin menghapus supplier "${supplierName}"?`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `{{ url_for('admin_delete_supplier', supplier_id=0) }}`.replace('0', supplierId);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

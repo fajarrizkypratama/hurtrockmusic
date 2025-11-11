@@ -1,0 +1,70 @@
+
+# Cloudflared Tunnel config for hurtrock-store.com
+
+origincert: /srv/www/hurtrock-store.com/config/cert.pem
+tunnel: hurtrock-store
+credentials-file: /srv/www/hurtrock-store.com/config/ffadf8ea-331c-4e5c-bb34-69dc205d09a2.json
+
+ingress:
+  # WebSocket routes for chat service - MUST come first
+  - hostname: hurtrock-store.com
+    path: /ws/chat/*
+    service: http://localhost:8000
+    originRequest:
+      noTLSVerify: true
+      httpHostHeader: hurtrock-store.com
+      connectTimeout: 60s
+
+  - hostname: www.hurtrock-store.com
+    path: /ws/chat/*
+    service: http://localhost:8000
+    originRequest:
+      noTLSVerify: true
+      httpHostHeader: www.hurtrock-store.com
+      connectTimeout: 60s
+
+  # Chat API routes to Django service
+  - hostname: hurtrock-store.com
+    path: /api/rooms/*
+    service: http://localhost:8000
+    originRequest:
+      noTLSVerify: true
+      httpHostHeader: hurtrock-store.com
+
+  - hostname: www.hurtrock-store.com
+    path: /api/rooms/*
+    service: http://localhost:8000
+    originRequest:
+      noTLSVerify: true
+      httpHostHeader: www.hurtrock-store.com
+
+  # Admin chat API routes to Django service
+  - hostname: hurtrock-store.com
+    path: /api/admin/*
+    service: http://localhost:8000
+    originRequest:
+      noTLSVerify: true
+      httpHostHeader: hurtrock-store.com
+
+  - hostname: www.hurtrock-store.com
+    path: /api/admin/*
+    service: http://localhost:8000
+    originRequest:
+      noTLSVerify: true
+      httpHostHeader: www.hurtrock-store.com
+
+  # Main website routes to Flask
+  - hostname: hurtrock-store.com
+    service: http://localhost:5000
+    originRequest:
+      noTLSVerify: true
+      httpHostHeader: hurtrock-store.com
+
+  - hostname: www.hurtrock-store.com
+    service: http://localhost:5000
+    originRequest:
+      noTLSVerify: true
+      httpHostHeader: www.hurtrock-store.com
+
+  # Catch-all
+  - service: http_status:404

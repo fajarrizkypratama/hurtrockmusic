@@ -1,0 +1,1347 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Kelola Produk - Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Kelola Produk</h2>
+    <a href="{{ url_for('admin_add_product') }}" class="btn btn-primary">
+        <svg class="admin-svg-icon me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+            <path d="M12 8V16M8 12H16" stroke="currentColor" stroke-width="2"/>
+        </svg> Tambah Produk
+    </a>
+</div>
+
+<!-- Search Bar -->
+<div class="mb-4 d-flex align-items-center">
+    <div class="input-group me-3">
+        <span class="input-group-text"><i class="fas fa-search"></i></span>
+        <input type="text" id="productSearchInput" class="form-control" placeholder="Cari produk berdasarkan ID, GTIN, Nama, atau Brand...">
+    </div>
+    <button class="btn btn-outline-secondary" onclick="clearProductSearch()" title="Bersihkan Pencarian">
+        <i class="fas fa-times"></i>
+    </button>
+</div>
+
+<!-- Stock Alerts -->
+{% if out_of_stock_products %}
+<div class="alert alert-danger shadow-sm mb-3" role="alert">
+    <div class="d-flex align-items-center">
+        <svg class="admin-svg-icon text-danger me-3" width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+            <path d="M15 9L9 15M9 9L15 15" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        <div class="flex-grow-1">
+            <h5 class="alert-heading mb-2">
+                <i class="fas fa-exclamation-triangle me-2"></i>STOK HABIS!
+            </h5>
+            <p class="mb-2">{{ out_of_stock_products|length }} produk kehabisan stok. Segera lakukan restok untuk menghindari kehilangan penjualan.</p>
+            <div class="row g-2 mt-2">
+                {% for product in out_of_stock_products[:4] %}
+                <div class="col-md-6 col-lg-3">
+                    <div class="d-flex align-items-center p-2 bg-white rounded border border-danger">
+                        <i class="fas fa-ban text-danger me-2"></i>
+                        <div class="flex-grow-1">
+                            <small class="fw-bold text-dark">{{ product.name[:20] }}{% if product.name|length > 20 %}...{% endif %}</small>
+                            <br>
+                            <span class="badge bg-danger">HABIS</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% if out_of_stock_products|length > 4 %}
+                <div class="col-12">
+                    <small class="text-muted">+{{ out_of_stock_products|length - 4 }} produk lainnya habis stok</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if critical_stock_products %}
+<div class="alert alert-warning shadow-sm mb-3" role="alert">
+    <div class="d-flex align-items-center">
+        <svg class="admin-svg-icon text-warning me-3" width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10.29 3.86L1.82 18A2 2 0 003.54 21H20.46A2 2 0 0022.18 18L13.71 3.86A2 2 0 0010.29 3.86Z" stroke="currentColor" stroke-width="2" fill="none"/>
+            <path d="M12 9V13M12 17H12.01" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        <div class="flex-grow-1">
+            <h5 class="alert-heading mb-2">
+                <i class="fas fa-exclamation-circle me-2"></i>STOK KRITIS!
+            </h5>
+            <p class="mb-2">{{ critical_stock_products|length }} produk memiliki stok kritis (≤ minimum). Segera lakukan restok.</p>
+            <div class="row g-2 mt-2">
+                {% for product in critical_stock_products[:4] %}
+                <div class="col-md-6 col-lg-3">
+                    <div class="d-flex align-items-center p-2 bg-white rounded border border-warning">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        <div class="flex-grow-1">
+                            <small class="fw-bold text-dark">{{ product.name[:20] }}{% if product.name|length > 20 %}...{% endif %}</small>
+                            <br>
+                            <span class="badge bg-danger">{{ product.stock_quantity }}/{{ product.minimum_stock }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% if critical_stock_products|length > 4 %}
+                <div class="col-12">
+                    <small class="text-muted">+{{ critical_stock_products|length - 4 }} produk lainnya stok kritis</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if low_stock_products %}
+<div class="alert alert-info shadow-sm mb-4" role="alert">
+    <div class="d-flex align-items-center">
+        <svg class="admin-svg-icon text-info me-3" width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+            <path d="M12 16V12M12 8H12.01" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        <div class="flex-grow-1">
+            <h5 class="alert-heading mb-2">
+                <i class="fas fa-info-circle me-2"></i>Stok Rendah
+            </h5>
+            <p class="mb-2">{{ low_stock_products|length }} produk memiliki stok rendah. Pertimbangkan untuk restok dalam waktu dekat.</p>
+            <div class="row g-2 mt-2">
+                {% for product in low_stock_products[:4] %}
+                <div class="col-md-6 col-lg-3">
+                    <div class="d-flex align-items-center p-2 bg-white rounded border border-info">
+                        <i class="fas fa-info-circle text-info me-2"></i>
+                        <div class="flex-grow-1">
+                            <small class="fw-bold text-dark">{{ product.name[:20] }}{% if product.name|length > 20 %}...{% endif %}</small>
+                            <br>
+                            <span class="badge bg-warning">{{ product.stock_quantity }}/{{ product.low_stock_threshold }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% if low_stock_products|length > 4 %}
+                <div class="col-12">
+                    <small class="text-muted">+{{ low_stock_products|length - 4 }} produk lainnya stok rendah</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="card shadow">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nama</th>
+                        <th>Kategori</th>
+                        <th>Harga</th>
+                        <th>Stok</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr data-product-id="{{ product.id }}" data-gtin="{{ product.gtin or '' }}">
+                        <td>{{ product.id }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if product.image_url %}
+                                <img src="{{ product.image_url }}" alt="{{ product.name }}"
+                                     style="width: 40px; height: 40px; object-fit: cover; border-radius: 5px; margin-right: 10px;">
+                                {% endif %}
+                                <div>
+                                    {% if product.slug %}
+                                    <a href="{{ url_for('product_detail', slug=product.slug) }}" target="_blank" class="text-decoration-none product-link p-1">
+                                        <strong class="text-primary">{{ product.name }}</strong>
+                                        <i class="fas fa-external-link-alt ms-1 text-muted" style="font-size: 11px;"></i>
+                                    </a>
+                                    {% else %}
+                                    <a href="{{ url_for('product_detail_by_id', product_id=product.id) }}" target="_blank" class="text-decoration-none product-link p-1">
+                                        <strong class="text-primary">{{ product.name }}</strong>
+                                        <i class="fas fa-external-link-alt ms-1 text-muted" style="font-size: 11px;"></i>
+                                    </a>
+                                    {% endif %}
+                                    <br>
+                                    <small class="text-muted">{{ product.brand }} {{ product.model }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ product.category.name if product.category else '-' }}</td>
+                        <td>{{ product.formatted_price }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-{{ product.stock_status_color }} me-2">
+                                    {{ product.stock_quantity }}
+                                </span>
+                                <small class="text-muted">
+                                    {% if product.stock_status == 'out_of_stock' %}
+                                        Habis
+                                    {% elif product.stock_status == 'critical' %}
+                                        Kritis (Min: {{ product.minimum_stock }})
+                                    {% elif product.stock_status == 'low' %}
+                                        Rendah (Min: {{ product.minimum_stock }})
+                                    {% else %}
+                                        Normal
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if product.is_active else 'secondary' }}">
+                                {{ 'Aktif' if product.is_active else 'Nonaktif' }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-primary" onclick="editProduct({{ product.id }})" data-bs-toggle="modal" data-bs-target="#editProductModal">
+                                    <svg class="admin-svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M11 4H4C3.4 4 3 4.4 3 5V20C3 20.6 3.4 21 4 21H19C19.6 21 20 20.6 20 20V13" stroke="currentColor" stroke-width="2" fill="none"/>
+                                        <path d="M18.5 2.5C19.3 1.7 20.7 1.7 21.5 2.5S22.3 4.7 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    </svg>
+                                </button>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <svg class="admin-svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <rect x="2" y="6" width="20" height="12" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>
+                                            <path d="M6 10H6.01M10 10H10.01M14 10H14.01M18 10H18.01M6 14H6.01M10 14H10.01M14 14H14.01M18 14H18.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                        </svg>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="{{ url_for('generate_product_barcode', product_id=product.id) }}" target="_blank">
+                                            <i class="fas fa-barcode me-2"></i>Download Barcode
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('generate_product_qrcode', product_id=product.id) }}" target="_blank">
+                                            <i class="fas fa-qrcode me-2"></i>Download QR Code
+                                        </a></li>
+                                    </ul>
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteProduct({{ product.id }}, '{{ product.name }}')" id="deleteBtn-{{ product.id }}">
+                                    <svg class="admin-svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M3 6H5H21" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M8 6V4C8 3.4 8.4 3 9 3H15C15.6 3 16 3.4 16 4V6M19 6V20C19 20.6 18.6 21 18 21H6C5.4 21 5 20.6 5 20V6H19Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Product Modal -->
+<div class="modal fade" id="editProductModal" tabindex="-1" aria-labelledby="editProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProductModalLabel">Edit Produk</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editProductForm" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="product_id" id="editProductId">
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editProductName" class="form-label">Nama Produk *</label>
+                            <input type="text" class="form-control" id="editProductName" name="name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="editProductCategory" class="form-label">Kategori *</label>
+                            <select class="form-select" id="editProductCategory" name="category_id" required>
+                                <option value="">Pilih Kategori</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="editProductSupplier" class="form-label">Supplier</label>
+                            <select class="form-select" id="editProductSupplier" name="supplier_id">
+                                <option value="">Pilih Supplier (Opsional)</option>
+                                {% for supplier in suppliers %}
+                                <option value="{{ supplier.id }}" 
+                                        data-contact="{{ supplier.contact_person or '' }}"
+                                        data-phone="{{ supplier.phone or '' }}"
+                                        data-address="{{ supplier.address or '' }}">
+                                    {{ supplier.name }}{% if supplier.company %} - {{ supplier.company }}{% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div id="editSupplierInfo" class="mt-2" style="display: none;">
+                                <small class="text-muted">
+                                    <div id="editSupplierContact"></div>
+                                    <div id="editSupplierPhone"></div>
+                                    <div id="editSupplierAddress"></div>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="editProductDescription" class="form-label">Deskripsi</label>
+                        <textarea class="form-control" id="editProductDescription" name="description" rows="4"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="editProductPrice" class="form-label">Harga (Rp) *</label>
+                            <input type="number" class="form-control" id="editProductPrice" name="price" step="1000" min="0" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="editProductStock" class="form-label">Stok *</label>
+                            <input type="number" class="form-control" id="editProductStock" name="stock_quantity" min="0" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="editTotalValue" class="form-label">Total Nilai Inventori</label>
+                            <div class="input-group">
+                                <span class="input-group-text">Rp</span>
+                                <input type="text" class="form-control bg-light" id="editTotalValue" readonly placeholder="0">
+                                <button type="button" class="btn btn-outline-primary" id="editCalculateTotalBtn" title="Hitung ulang total nilai">
+                                    <i class="fas fa-calculator"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted">Harga × Stok = Total nilai inventori</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="editProductBrand" class="form-label">Brand</label>
+                            <input type="text" class="form-control" id="editProductBrand" name="brand">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="editProductGTIN" class="form-label">GTIN (Barcode)</label>
+                            <input type="text" class="form-control" id="editProductGTIN" name="gtin" placeholder="Masukkan GTIN/Barcode">
+                            <small class="text-muted">GTIN dapat diedit manual atau otomatis dibuat jika kosong</small>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="editProductModel" class="form-label">Model</label>
+                            <input type="text" class="form-control" id="editProductModel" name="model">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="editProductMinStock" class="form-label">Minimum Stok *</label>
+                            <input type="number" class="form-control" id="editProductMinStock" name="minimum_stock" min="1" value="5" required>
+                            <small class="text-muted">Batas minimum untuk alert kritis</small>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="editProductLowStockThreshold" class="form-label">Ambang Stok Rendah *</label>
+                            <input type="number" class="form-control" id="editProductLowStockThreshold" name="low_stock_threshold" min="1" value="10" required>
+                            <small class="text-muted">Batas untuk peringatan stok rendah</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label for="editProductWeight" class="form-label">Berat Produk (gram)</label>
+                            <input type="number" class="form-control" id="editProductWeight" name="weight" min="0" step="100">
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="editPackingExtraWeight" class="form-label">Berat Tambahan Packing (gram)</label>
+                            <input type="number" class="form-control" id="editPackingExtraWeight" name="packing_weight_extra" min="0" step="100">
+                            <small class="text-muted">Tambahkan berat kayu, bubble wrap, dsb</small>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="editProductLength" class="form-label">Panjang (cm)</label>
+                            <input type="number" class="form-control" id="editProductLength" name="length" min="0" step="0.1">
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="editProductWidth" class="form-label">Lebar (cm)</label>
+                            <input type="number" class="form-control" id="editProductWidth" name="width" min="0" step="0.1">
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label for="editProductHeight" class="form-label">Tinggi (cm)</label>
+                            <input type="number" class="form-control" id="editProductHeight" name="height" min="0" step="0.1">
+                        </div>
+                    </div>
+
+                    <!-- Gambar Produk Upload - mirip add produk -->
+                    <div class="mb-4">
+                        <label class="form-label">Upload Gambar Produk Baru</label>
+                        <div id="editDropArea" class="border border-2 border-dashed border-primary rounded p-4 text-center bg-light">
+                            <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                            <p class="mb-2"><strong>Drag & Drop gambar ke sini</strong></p>
+                            <p class="text-muted mb-3">atau klik untuk memilih file</p>
+                            <input type="file" id="editProductImages" name="new_images" accept="image/*" multiple style="display: none;">
+                            <button type="button" class="btn btn-primary" onclick="triggerEditFileInput(event)">
+                                <i class="fas fa-folder-open me-2"></i>Pilih File
+                            </button>
+                        </div>
+                        <div id="editGallery" class="mt-3"></div>
+                        <div id="editCurrentImages" class="mt-3"></div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="editProductIsFeatured" name="is_featured">
+                                <label class="form-check-label" for="editProductIsFeatured">
+                                    Produk Unggulan
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editProductIsActive" name="is_active">
+                                <label class="form-check-label" for="editProductIsActive">
+                                    Status Aktif
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" form="editProductForm" class="btn btn-primary" id="editSubmitButton">
+                    <i class="fas fa-save me-2"></i>Simpan Perubahan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Product link hover effect */
+.product-link:hover {
+    background-color: rgba(13, 110, 253, 0.1);
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.product-link:hover .text-primary {
+    text-decoration: underline !important;
+}
+
+/* Modal backdrop fix */
+.modal-backdrop {
+    z-index: 1040;
+}
+
+.modal {
+    z-index: 1050;
+}
+
+/* Ensure body scrolling is restored when modal is closed */
+body.modal-open {
+    overflow: hidden;
+}
+
+/* Image gallery styles for edit modal - matching add product */
+#editDropArea {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#editDropArea:hover, #editDropArea.highlight {
+    border-color: #0056b3 !important;
+    background-color: #f0f8ff !important;
+}
+
+#editDropArea.highlight {
+    transform: scale(1.01);
+}
+
+.upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+}
+
+.upload-area:hover, .upload-area.drag-over {
+    border-color: #FF6B35;
+    background: #fff5f2;
+}
+
+.upload-area.drag-over {
+    transform: scale(1.01);
+}
+
+.image-preview {
+    max-width: 200px;
+    max-height: 200px;
+    margin: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.image-container {
+    display: inline-block;
+    margin: 10px;
+    position: relative;
+}
+
+.remove-image {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+}
+
+.image-preview-card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+    background: white;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.image-preview-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+.preview-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.image-preview-card:hover .preview-image {
+    transform: scale(1.05);
+}
+
+.image-overlay {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.3);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    padding: 8px;
+}
+
+.image-preview-card:hover .image-overlay {
+    opacity: 1;
+}
+
+.remove-btn {
+    background: rgba(220, 53, 69, 0.9) !important;
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.remove-btn:hover {
+    background: rgba(220, 53, 69, 1) !important;
+    transform: scale(1.1);
+}
+
+.thumbnail-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: linear-gradient(135deg, #FF6B35, #FF8C42);
+    color: white;
+    padding: 3px 6px;
+    border-radius: 10px;
+    font-size: 9px;
+    font-weight: bold;
+    z-index: 5;
+}
+
+.image-info {
+    background: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+}
+</style>
+
+<script>
+// Real-time product search
+const productSearchInput = document.getElementById('productSearchInput');
+let searchTimeout;
+
+if (productSearchInput) {
+    productSearchInput.addEventListener('input', function(e) {
+        clearTimeout(searchTimeout);
+        const query = this.value.toLowerCase().trim();
+
+        searchTimeout = setTimeout(() => {
+            filterProducts(query);
+        }, 300); // 300ms debounce
+    });
+}
+
+function filterProducts(query) {
+    const tableRows = document.querySelectorAll('table tbody tr');
+    let visibleCount = 0;
+
+    tableRows.forEach(row => {
+        if (!query || query.length < 2) {
+            row.style.display = '';
+            visibleCount++;
+            return;
+        }
+
+        const productId = row.querySelector('td:nth-child(1)')?.textContent.toLowerCase() || '';
+        const productName = row.querySelector('td:nth-child(2) strong')?.textContent.toLowerCase() || '';
+        const productBrand = row.querySelector('td:nth-child(2) small')?.textContent.toLowerCase() || '';
+
+        // Search in all product data attributes if available
+        const productData = row.querySelector('td:nth-child(2)');
+        const gtin = productData?.dataset?.gtin?.toLowerCase() || '';
+
+        // Match if query found in ID, GTIN, name, or brand
+        const matches = productId.includes(query) || 
+                       gtin.includes(query) || 
+                       productName.includes(query) || 
+                       productBrand.includes(query);
+
+        row.style.display = matches ? '' : 'none';
+        if (matches) visibleCount++;
+    });
+
+    // Show "no results" message
+    showNoResultsMessage(visibleCount, query);
+}
+
+function showNoResultsMessage(count, query) {
+    let noResultsRow = document.getElementById('noResultsRow');
+
+    if (count === 0 && query.length >= 2) {
+        if (!noResultsRow) {
+            const tbody = document.querySelector('table tbody');
+            noResultsRow = document.createElement('tr');
+            noResultsRow.id = 'noResultsRow';
+            noResultsRow.innerHTML = `
+                <td colspan="7" class="text-center py-4">
+                    <i class="fas fa-search fa-2x text-muted mb-3"></i>
+                    <h5 class="text-muted">Tidak ada produk ditemukan</h5>
+                    <p class="text-muted">Coba kata kunci lain atau hapus filter</p>
+                </td>
+            `;
+            tbody.appendChild(noResultsRow);
+        }
+        noResultsRow.style.display = '';
+    } else if (noResultsRow) {
+        noResultsRow.style.display = 'none';
+    }
+}
+
+function clearProductSearch() {
+    const input = document.getElementById('productSearchInput');
+    if (input) {
+        input.value = '';
+        filterProducts('');
+    }
+}
+
+let editSelectedFiles = [];
+let editSelectedThumbnailIndex = 0;
+const EDIT_MAX_FILES = 5;
+
+function editProduct(productId) {
+    // First ensure any existing modal is properly closed
+    const existingBackdrops = document.querySelectorAll('.modal-backdrop');
+    existingBackdrops.forEach(backdrop => backdrop.remove());
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+
+    fetch(`/admin/product/${productId}/edit`)
+        .then(response => response.json())
+        .then(product => {
+            console.log('[DEBUG] Loaded product data:', product);
+
+            // Reset edit modal state
+            editSelectedFiles = [];
+            editSelectedThumbnailIndex = 0;
+
+            // Populate form fields
+            document.getElementById('editProductId').value = product.id;
+            document.getElementById('editProductName').value = product.name;
+            document.getElementById('editProductBrand').value = product.brand || '';
+            document.getElementById('editProductModel').value = product.model || '';
+            // Store original GTIN for comparison
+            const originalGTIN = product.gtin || '';
+            document.getElementById('editProductGTIN').value = originalGTIN;
+            document.getElementById('editProductGTIN').dataset.originalGtin = originalGTIN;
+            document.getElementById('editProductCategory').value = product.category_id;
+            document.getElementById('editProductPrice').value = product.price;
+            document.getElementById('editProductStock').value = product.stock_quantity;
+            document.getElementById('editProductMinStock').value = product.minimum_stock || 5;
+            document.getElementById('editProductLowStockThreshold').value = product.low_stock_threshold || 10;
+            document.getElementById('editProductSupplier').value = product.supplier_id || '';
+            document.getElementById('editProductDescription').value = product.description || '';
+            document.getElementById('editProductWeight').value = product.weight || '';
+            document.getElementById('editProductLength').value = product.length || '';
+            document.getElementById('editProductWidth').value = product.width || '';
+            document.getElementById('editProductHeight').value = product.height || '';
+            document.getElementById('editProductIsFeatured').checked = product.is_featured;
+            document.getElementById('editProductIsActive').checked = product.is_active;
+
+            // Update supplier info if selected
+            updateEditSupplierInfo();
+
+            // Load existing images
+            loadCurrentImages(productId);
+
+            // Clear new image upload and reset state
+            document.getElementById('editGallery').innerHTML = '';
+            document.getElementById('editProductImages').value = '';
+            updateEditUploadArea();
+
+            // Calculate total value
+            calculateEditTotalValue();
+
+            // Show the modal with proper instance management
+            const modalElement = document.getElementById('editProductModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error fetching product:', error);
+            alert('Gagal memuat data produk. Silakan coba lagi.');
+        });
+}
+
+function loadCurrentImages(productId) {
+    fetch(`/admin/product/${productId}/images`)
+        .then(response => response.json())
+        .then(images => {
+            console.log('[DEBUG] Loaded images:', images);
+            const container = document.getElementById('editCurrentImages');
+            container.innerHTML = '';
+
+            if (images && images.length > 0) {
+                container.innerHTML = '<h6 class="text-muted mb-3">Gambar Saat Ini:</h6>';
+
+                const imagesRow = document.createElement('div');
+                imagesRow.className = 'row g-2';
+
+                images.forEach((image, index) => {
+                    const imageCol = document.createElement('div');
+                    imageCol.className = 'col-6 col-md-4 col-lg-3';
+
+                    const imageCard = document.createElement('div');
+                    imageCard.className = 'image-preview-card';
+                    imageCard.style.position = 'relative';
+
+                    imageCard.innerHTML = `
+                        <div class="image-container" style="position: relative; height: 150px; overflow: hidden; border-radius: 8px; border: 2px solid ${image.is_thumbnail ? '#28a745' : '#dee2e6'};">
+                            <img src="${image.image_url}" class="preview-image" style="width: 100%; height: 100%; object-fit: cover;" alt="Current Image ${index + 1}">
+                            ${image.is_thumbnail ? '<span class="badge bg-success position-absolute top-0 start-0 ms-2 mt-2"><i class="fas fa-crown"></i> Utama</span>' : ''}
+                            <div class="image-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.3s; display: flex; align-items: flex-start; justify-content: space-between; padding: 8px;">
+                                <button type="button" class="btn btn-sm btn-danger remove-btn" onclick="removeCurrentImage(${image.id})" title="Hapus gambar">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                ${!image.is_thumbnail ? `<button type="button" class="btn btn-sm btn-primary set-thumbnail-btn" onclick="setCurrentThumbnail(${image.id})" title="Set sebagai gambar utama">
+                                    <i class="fas fa-crown"></i>
+                                </button>` : ''}
+                            </div>
+                        </div>
+                        <div class="image-info p-2 text-center">
+                            <small class="text-muted">Gambar ${index + 1}</small>
+                        </div>
+                    `;
+
+                    // Add hover effect
+                    imageCard.addEventListener('mouseenter', function() {
+                        const overlay = this.querySelector('.image-overlay');
+                        if (overlay) overlay.style.opacity = '1';
+                    });
+
+                    imageCard.addEventListener('mouseleave', function() {
+                        const overlay = this.querySelector('.image-overlay');
+                        if (overlay) overlay.style.opacity = '0';
+                    });
+
+                    imageCol.appendChild(imageCard);
+                    imagesRow.appendChild(imageCol);
+                });
+
+                container.appendChild(imagesRow);
+            } else {
+                container.innerHTML = '<div class="text-muted text-center p-3"><i class="fas fa-image fa-2x mb-2"></i><br>Belum ada gambar</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading images:', error);
+            const container = document.getElementById('editCurrentImages');
+            container.innerHTML = '<div class="text-danger text-center p-3"><i class="fas fa-exclamation-triangle fa-2x mb-2"></i><br>Gagal memuat gambar</div>';
+        });
+}
+
+function removeCurrentImage(imageId) {
+    if (!confirm('Apakah Anda yakin ingin menghapus gambar ini?')) return;
+
+    fetch(`/admin/product/image/${imageId}/delete`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showEditAlert('success', 'Gambar berhasil dihapus!');
+            loadCurrentImages(document.getElementById('editProductId').value);
+        } else {
+            showEditAlert('error', data.message || 'Gagal menghapus gambar.');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        showEditAlert('error', 'Terjadi kesalahan saat menghapus gambar.');
+    });
+}
+
+
+function setCurrentThumbnail(imageId) {
+    const productId = document.getElementById('editProductId').value;
+
+    fetch(`/admin/product/${productId}/thumbnail/${imageId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showEditAlert('success', 'Gambar utama berhasil diperbarui!');
+            loadCurrentImages(productId);
+        } else {
+            showEditAlert('error', data.message || 'Gagal mengubah gambar utama.');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        showEditAlert('error', 'Terjadi kesalahan saat mengatur gambar utama.');
+    });
+}
+
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(alertDiv);
+
+    // Auto dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function handleEditFormSubmit(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    console.log('Edit form submit triggered');
+
+    const form = e.target;
+    const productId = document.getElementById('editProductId').value;
+
+    if (!productId) {
+        showEditAlert('error', 'Product ID tidak ditemukan!');
+        return false;
+    }
+
+    // Show loading state
+    const submitBtn = document.getElementById('editSubmitButton');
+    if (submitBtn) {
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Menyimpan...';
+        submitBtn.disabled = true;
+        submitBtn.dataset.originalText = originalText;
+    }
+
+    const formData = new FormData(form);
+
+    // Add selected thumbnail index to form data if we have new images
+    if (editSelectedFiles.length > 0) {
+        formData.append('selected_thumbnail', editSelectedThumbnailIndex);
+    }
+
+    console.log('Sending edit request to:', `/admin/products/${productId}/edit`);
+
+    fetch(`/admin/products/${productId}/edit`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+        }
+    })
+    .then(response => {
+        console.log('Edit response status:', response.status);
+        if (response.ok) {
+            // Success - reload the page
+            showEditAlert('success', 'Produk berhasil diperbarui!');
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        } else {
+            return response.text().then(text => {
+                throw new Error(`Server error: ${response.status} - ${text}`);
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error updating product:', error);
+        showEditAlert('error', 'Gagal memperbarui produk: ' + error.message);
+
+        // Restore button state
+        if (submitBtn) {
+            submitBtn.innerHTML = submitBtn.dataset.originalText || '<i class="fas fa-save me-2"></i>Simpan Perubahan';
+            submitBtn.disabled = false;
+        }
+    });
+
+    return false;
+}
+
+function deleteProduct(productId, productName) {
+    if (!confirm(`Apakah Anda yakin ingin menghapus produk "${productName}"?\n\nTindakan ini tidak dapat dibatalkan!`)) {
+        return;
+    }
+
+    const deleteBtn = document.getElementById(`deleteBtn-${productId}`);
+    if (!deleteBtn) return;
+
+    // Show loading state
+    const originalHTML = deleteBtn.innerHTML;
+    deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    deleteBtn.disabled = true;
+
+    // Create form and submit
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/admin/products/${productId}/delete`;
+
+    // Add CSRF token
+    const csrfTokenInput = document.querySelector('input[name="csrf_token"]');
+    if (csrfTokenInput) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = csrfTokenInput.value;
+        form.appendChild(csrfInput);
+    }
+
+    document.body.appendChild(form);
+
+    // Submit with timeout protection
+    const timeoutId = setTimeout(() => {
+        deleteBtn.innerHTML = originalHTML;
+        deleteBtn.disabled = false;
+        alert('Operasi timeout. Silakan coba lagi.');
+        document.body.removeChild(form);
+    }, 30000); // 30 second timeout
+
+    form.addEventListener('submit', function() {
+        clearTimeout(timeoutId);
+    });
+
+    form.submit();
+}
+
+function setupEditImageUpload() {
+    const editDropArea = document.getElementById('editDropArea');
+    const editFileInput = document.getElementById('editProductImages');
+
+    if (!editDropArea || !editFileInput) {
+        console.log('Edit upload elements not found');
+        return;
+    }
+
+    console.log('Setting up edit image upload...');
+
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        editDropArea.addEventListener(eventName, preventEditDefaults, false);
+    });
+
+    // Highlight drop area when item is dragged over it
+    ['dragenter', 'dragover'].forEach(eventName => {
+        editDropArea.addEventListener(eventName, highlightEdit, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        editDropArea.addEventListener(eventName, unhighlightEdit, false);
+    });
+
+    // Handle dropped files
+    editDropArea.addEventListener('drop', handleEditDrop, false);
+
+    // Handle file input change
+    editFileInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            handleEditFiles(Array.from(e.target.files));
+        }
+    });
+
+    console.log('Edit image upload setup completed');
+}
+
+function preventEditDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function highlightEdit(e) {
+    document.getElementById('editDropArea').classList.add('highlight');
+}
+
+function unhighlightEdit(e) {
+    document.getElementById('editDropArea').classList.remove('highlight');
+}
+
+function triggerEditFileInput(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    if (editSelectedFiles.length < EDIT_MAX_FILES) {
+        const fileInput = document.getElementById('editProductImages');
+        fileInput.value = '';
+        fileInput.click();
+    } else {
+        showEditAlert('warning', `Maksimal ${EDIT_MAX_FILES} gambar sudah tercapai.`);
+    }
+}
+
+function handleEditDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+
+    console.log('Edit files dropped:', files.length);
+    handleEditFiles(Array.from(files));
+}
+
+function handleEditFiles(files) {
+    console.log('Processing', files.length, 'edit files');
+
+    const validFiles = [];
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+    for (let file of files) {
+        if (!file.type.startsWith('image/')) {
+            showEditAlert('error', `File ${file.name} bukan gambar yang valid!`);
+            continue;
+        }
+        if (file.size > MAX_FILE_SIZE) {
+            showEditAlert('error', `File ${file.name} terlalu besar! Maksimal 5MB per file.`);
+            continue;
+        }
+        validFiles.push(file);
+    }
+
+    const remainingSlots = EDIT_MAX_FILES - editSelectedFiles.length;
+    if (validFiles.length > remainingSlots) {
+        showEditAlert('warning', `Maksimal ${EDIT_MAX_FILES} gambar. Hanya ${remainingSlots} gambar pertama yang akan ditambahkan.`);
+        validFiles.splice(remainingSlots);
+    }
+
+    if (validFiles.length === 0) {
+        console.log('No valid edit files to process');
+        return;
+    }
+
+    editSelectedFiles = editSelectedFiles.concat(validFiles);
+
+    updateEditFileInput();
+    displayEditImages();
+    updateEditUploadArea();
+}
+
+function updateEditFileInput() {
+    const dt = new DataTransfer();
+    editSelectedFiles.forEach(file => dt.items.add(file));
+    document.getElementById('editProductImages').files = dt.files;
+}
+
+function displayEditImages() {
+    const gallery = document.getElementById('editGallery');
+    if (!gallery) return;
+
+    gallery.innerHTML = '';
+
+    if (editSelectedFiles.length === 0) {
+        return;
+    }
+
+    editSelectedFiles.forEach((file, index) => {
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const container = document.createElement('div');
+                container.className = 'image-container';
+                container.style.display = 'inline-block';
+                container.style.margin = '10px';
+                container.style.position = 'relative';
+
+                container.innerHTML = `
+                    <img src="${e.target.result}" class="image-preview" style="max-width: 200px; max-height: 200px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);" alt="Preview ${index + 1}">
+                    <button type="button" class="remove-image" onclick="removeEditImage(${index})" style="position: absolute; top: -10px; right: -10px; background: #dc3545; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 12px;">×</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary set-thumbnail" 
+                            onclick="setEditThumbnail(${index})" 
+                            ${index === editSelectedThumbnailIndex ? 'style="display:none"' : ''}
+                            style="position: absolute; bottom: 5px; left: 5px; font-size: 10px; padding: 2px 6px;">
+                        Set Utama
+                    </button>
+                    ${index === editSelectedThumbnailIndex ? '<span class="badge bg-success position-absolute" style="top: 5px; left: 5px;"><i class="fas fa-crown"></i> Utama</span>' : ''}
+                `;
+                gallery.appendChild(container);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+}
+
+function removeEditImage(index) {
+    editSelectedFiles.splice(index, 1);
+
+    // Adjust thumbnail index
+    if (editSelectedThumbnailIndex === index) {
+        editSelectedThumbnailIndex = editSelectedFiles.length > 0 ? 0 : -1;
+    } else if (editSelectedThumbnailIndex > index) {
+        editSelectedThumbnailIndex--;
+    }
+
+    updateEditFileInput();
+    displayEditImages();
+    updateEditUploadArea();
+}
+
+function setEditThumbnail(index) {
+    editSelectedThumbnailIndex = index;
+    displayEditImages();
+}
+
+function updateEditUploadArea() {
+    const dropArea = document.getElementById('editDropArea');
+    if (!dropArea) return;
+
+    if (editSelectedFiles.length >= EDIT_MAX_FILES) {
+        dropArea.classList.add('disabled');
+        dropArea.innerHTML = `
+            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+            <p class="mb-2"><strong>Maksimal ${EDIT_MAX_FILES} gambar tercapai</strong></p>
+            <p class="text-muted mb-3">Hapus gambar untuk menambah yang baru</p>
+        `;
+    } else {
+        dropArea.classList.remove('disabled');
+        if (!dropArea.querySelector('button') || dropArea.innerHTML.includes('check-circle')) {
+            dropArea.innerHTML = `
+                <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                <p class="mb-2"><strong>Drag & Drop gambar ke sini</strong></p>
+                <p class="text-muted mb-3">atau klik untuk memilih file</p>
+                <button type="button" class="btn btn-primary" onclick="triggerEditFileInput(event)">
+                    <i class="fas fa-folder-open me-2"></i>Pilih File
+                </button>
+            `;
+        }
+    }
+}
+
+function setupEditSupplierInfo() {
+    const supplierSelect = document.getElementById('editProductSupplier');
+    if (!supplierSelect) return;
+
+    supplierSelect.addEventListener('change', updateEditSupplierInfo);
+}
+
+function updateEditSupplierInfo() {
+    const supplierSelect = document.getElementById('editProductSupplier');
+    const infoDiv = document.getElementById('editSupplierInfo');
+
+    if (supplierSelect && infoDiv) {
+        const selected = supplierSelect.options[supplierSelect.selectedIndex];
+
+        if (supplierSelect.value && supplierSelect.value !== '') {
+            const contact = selected.dataset.contact;
+            const phone = selected.dataset.phone;
+            const address = selected.dataset.address;
+
+            document.getElementById('editSupplierContact').innerHTML = contact ? `Contact: ${contact}` : '';
+            document.getElementById('editSupplierPhone').innerHTML = phone ? `Phone: ${phone}` : '';
+            document.getElementById('editSupplierAddress').innerHTML = address ? `Address: ${address}` : '';
+
+            infoDiv.style.display = 'block';
+        } else {
+            infoDiv.style.display = 'none';
+        }
+    }
+}
+
+function setupEditFormValidation() {
+    const form = document.getElementById('editProductForm');
+    if (!form) return;
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const price = parseFloat(document.getElementById('editProductPrice').value);
+        const stock = parseInt(document.getElementById('editProductStock').value);
+        const minStock = parseInt(document.getElementById('editProductMinStock').value);
+        const lowStockThreshold = parseInt(document.getElementById('editProductLowStockThreshold').value);
+
+        if (isNaN(price) || price < 0) {
+            showEditAlert('error', 'Harga harus berupa angka positif!');
+            return false;
+        }
+
+        if (isNaN(stock) || stock < 0) {
+            showEditAlert('error', 'Stok harus berupa angka positif!');
+            return false;
+        }
+
+        if (isNaN(minStock) || minStock < 1) {
+            showEditAlert('error', 'Minimum Stok harus berupa angka positif!');
+            return false;
+        }
+
+        if (isNaN(lowStockThreshold) || lowStockThreshold < 1) {
+            showEditAlert('error', 'Ambang Stok Rendah harus berupa angka positif!');
+            return false;
+        }
+
+        if (minStock >= lowStockThreshold) {
+            showEditAlert('error', 'Minimum Stok harus lebih kecil dari Ambang Stok Rendah.');
+            return false;
+        }
+
+        handleEditFormSubmit(e);
+        return false;
+    });
+}
+
+function setupEditPriceCalculation() {
+    const priceInput = document.getElementById('editProductPrice');
+    const stockInput = document.getElementById('editProductStock');
+    const calculateBtn = document.getElementById('editCalculateTotalBtn');
+
+    if (priceInput) {
+        priceInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/[^0-9]/g, '');
+            if (value) {
+                e.target.value = value; 
+            }
+            calculateEditTotalValue();
+        });
+    }
+
+    if (stockInput) {
+        stockInput.addEventListener('input', calculateEditTotalValue);
+    }
+
+    if (calculateBtn) {
+        calculateBtn.addEventListener('click', function() {
+            calculateEditTotalValue();
+            showEditAlert('info', 'Total nilai inventori berhasil dihitung ulang!');
+        });
+    }
+
+    const descriptionInput = document.getElementById('editProductDescription');
+    if (descriptionInput) {
+        descriptionInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+    }
+}
+
+function calculateEditTotalValue() {
+    const priceInput = document.getElementById('editProductPrice');
+    const stockInput = document.getElementById('editProductStock');
+    const totalValueInput = document.getElementById('editTotalValue');
+
+    if (priceInput && stockInput && totalValueInput) {
+        const price = parseFloat(priceInput.value) || 0;
+        const stock = parseInt(stockInput.value) || 0;
+        const total = price * stock;
+
+        totalValueInput.value = total.toLocaleString('id-ID');
+    }
+}
+
+function showEditAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(alertDiv);
+
+    // Auto dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+// Initialize on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded - initializing edit product functionality');
+    setupEditImageUpload();
+    setupEditSupplierInfo();
+    setupEditFormValidation();
+    setupEditPriceCalculation();
+});
+
+</script>
+{% endblock %}

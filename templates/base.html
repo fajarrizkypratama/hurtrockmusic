@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+    <title>
+      {% block title %}HurtRock - Merchandise Music Store{% endblock %}
+    </title>
+
+    <!-- SEO Meta Tags -->
+    <meta
+      name="description"
+      content="{% block description %}HurtRock - Merchandise and music instruments store. Koleksi lengkap alat musik berkualitas.{% endblock %}"
+    />
+    <meta
+      name="keywords"
+      content="{% block keywords %}music store, alat musik, gitar, drum, keyboard, merchandise, hurtrock{% endblock %}"
+    />
+
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <!-- Custom CSS -->
+    <link
+      href="{{ url_for('static', filename='css/style.css') }}"
+      rel="stylesheet"
+    />
+
+    <!-- Google tag (gtag.js) -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=GT-PL3TF6QJ"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+
+      gtag("config", "GT-PL3TF6QJ");
+    </script>
+
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <div class="container-fluid" style="max-width: 1400px">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="header-left">
+            <a href="{{ url_for('store_info') }}">HurtRock Music Store</a>
+          </div>
+          <div class="social-icons">
+            <a
+              href="https://www.facebook.com/hurtrockstore/"
+              target="_blank"
+              title="Facebook"
+              ><i class="fab fa-facebook-f"></i
+            ></a>
+            <a
+              href="https://www.instagram.com/hurtrockmusic"
+              target="_blank"
+              title="Instagram"
+              ><i class="fab fa-instagram"></i
+            ></a>
+            <a
+              href="https://x.com/hurtrockmusic"
+              target="_blank"
+              title="X (Twitter)"
+              ><i class="fab fa-twitter"></i
+            ></a>
+            <a
+              href="https://www.youtube.com/c/HurtrockMusic/about"
+              target="_blank"
+              title="YouTube"
+              ><i class="fab fa-youtube"></i
+            ></a>
+            <a
+              href="https://www.lazada.co.id/shop/hurtrock-music-store/?path=index.htm"
+              target="_blank"
+              title="Lazada"
+              ><i class="fas fa-shopping-bag"></i
+            ></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Header -->
+    <header class="main-header">
+      <div class="header-container">
+        <div class="header-left"></div>
+
+        <div class="header-center">
+          <a href="{{ url_for('index') }}" class="site-logo">
+            <img
+              src="{{ store_profile.logo_url }}"
+              alt="{{ store_profile.store_name or 'Hurtrock Music Store' }}"
+              style="height: 128px; width: auto; margin-right: 16px"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"
+            />
+            <i
+              class="fas fa-music default-music-icon"
+              style="
+                font-size: 64px;
+                color: var(--orange-primary);
+                display: none;
+              "
+            ></i>
+          </a>
+        </div>
+
+        <div class="header-right">
+          {% if current_user.is_authenticated %}
+          <!-- User Dropdown -->
+          <div class="dropdown">
+            <a
+              href="#"
+              class="header-icon dropdown-toggle"
+              id="userDropdown"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <i class="fas fa-user"></i>
+            </a>
+            <ul
+              class="dropdown-menu dropdown-menu-end"
+              aria-labelledby="userDropdown"
+            >
+              <li>
+                <h6 class="dropdown-header">{{ current_user.name }}</h6>
+              </li>
+              <li><hr class="dropdown-divider" /></li>
+              {% if current_user.is_admin %}
+              <li>
+                <a class="dropdown-item" href="{{ url_for('admin_dashboard') }}"
+                  ><i class="fas fa-tachometer-alt me-2"></i>Dashboard Admin</a
+                >
+              </li>
+              {% elif current_user.is_staff %}
+              <li>
+                <a
+                  class="dropdown-item"
+                  href="{{ url_for('cashier_dashboard') }}"
+                  ><i class="fas fa-cash-register me-2"></i>Kasir POS</a
+                >
+              </li>
+              {% endif %}
+              <li>
+                <a class="dropdown-item" href="{{ url_for('orders') }}"
+                  ><i class="fas fa-shopping-bag me-2"></i>Pesanan Saya</a
+                >
+              </li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('profile') }}"
+                  ><i class="fas fa-user-edit me-2"></i>Lengkapi Profile</a
+                >
+              </li>
+              <li><hr class="dropdown-divider" /></li>
+              <li>
+                <a class="dropdown-item" href="{{ url_for('logout') }}"
+                  ><i class="fas fa-sign-out-alt me-2"></i>Logout</a
+                >
+              </li>
+            </ul>
+          </div>
+          {% else %}
+          <a href="{{ url_for('login') }}" class="header-icon" title="Login"
+            ><i class="fas fa-user"></i
+          ></a>
+          {% endif %}
+          <a
+            href="{{ url_for('cart') if current_user.is_authenticated else url_for('login') }}"
+            class="header-icon"
+          >
+            <i class="fas fa-shopping-cart"></i>
+            {% if current_user.is_authenticated %}
+            <span id="cartCount" class="badge">0</span>
+            {% endif %}
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Navigation -->
+    <nav class="main-nav">
+      <div class="nav-container">
+        <ul class="nav-menu">
+          <li><a href="{{ url_for('index') }}">BERANDA</a></li>
+          <li><a href="{{ url_for('products') }}">PRODUK</a></li>
+          <li>
+            <a href="{{ url_for('products') }}?category=1">GITAR</a>
+          </li>
+          <li>
+            <a href="{{ url_for('products') }}?category=3">DRUM</a>
+          </li>
+          <li>
+            <a href="{{ url_for('products') }}?category=4">KEYBOARD</a>
+          </li>
+          <li>
+            <a href="{{ url_for('store_info') }}">TENTANG KAMI</a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if
+    messages %}
+    <div class="container mt-3">
+      {% for category, message in messages %}
+      <div
+        class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show"
+        role="alert"
+      >
+        {{ message }}
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+        ></button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %} {% endwith %}
+
+    <!-- Main Content -->
+    {% block content %}{% endblock %}
+
+    <!-- Floating Chat Widget -->
+    {% include 'floating_chat.html' %}
+
+    <!-- Footer -->
+    <footer>
+      <div class="footer-content">
+        <div
+          class="container-fluid"
+          style="max-width: 1400px; margin: 0 auto; padding: 40px 20px 20px"
+        >
+          <div class="row">
+            <!-- Kolom 1: Tentang Toko -->
+            <div class="col-md-4 mb-4">
+              <h5 class="footer-heading">HurtRock Music Store</h5>
+              <p class="footer-text">
+                Toko musik terpercaya yang menyediakan berbagai alat musik
+                berkualitas tinggi. Kami melayani musisi dari berbagai level,
+                mulai dari pemula hingga profesional.
+              </p>
+              <div class="footer-social">
+                <a
+                  href="https://www.facebook.com/hurtrockstore/"
+                  target="_blank"
+                  title="Facebook"
+                >
+                  <i class="fab fa-facebook-f"></i>
+                </a>
+                <a
+                  href="https://www.instagram.com/hurtrockmusic"
+                  target="_blank"
+                  title="Instagram"
+                >
+                  <i class="fab fa-instagram"></i>
+                </a>
+                <a href="https://x.com/hurtrockmusic" target="_blank" title="X">
+                  <i class="fab fa-twitter"></i>
+                </a>
+                <a
+                  href="https://www.youtube.com/c/HurtrockMusic/about"
+                  target="_blank"
+                  title="YouTube"
+                >
+                  <i class="fab fa-youtube"></i>
+                </a>
+              </div>
+            </div>
+
+            <!-- Kolom 2: Kontak -->
+            <div class="col-md-4 mb-4">
+              <h5 class="footer-heading">Kontak Kami</h5>
+              <div class="footer-contact">
+                <p>
+                  <i class="fas fa-map-marker-alt"></i> Jl Gegerkalong Girang
+                  Complex Darut Tauhid Kav 22, Kota Bandung, Jawa Barat
+                </p>
+                <p>
+                  <i class="fas fa-map-marker-alt"></i> Jl. Ciawitali No.34,
+                  Citeureup, Kec. Cimahi Utara, Kota Cimahi, Jawa Barat 40512,
+                  Indonesia
+                </p>
+                <p>
+                  <i class="fas fa-phone"></i>
+                  <a href="tel:+6282115558035">0821-1555-8035</a>
+                </p>
+                <p>
+                  <i class="fas fa-whatsapp"></i>
+                  <a href="https://wa.me/6282115558035" target="_blank"
+                    >0821-1555-8035</a
+                  >
+                </p>
+                <p>
+                  <i class="fas fa-envelope"></i>
+                  <a href="mailto:hurtrockstore@gmail.com"
+                    >hurtrockstore@gmail.com</a
+                  >
+                </p>
+              </div>
+            </div>
+
+            <!-- Kolom 3: Jam Operasional & Links -->
+            <div class="col-md-4 mb-4">
+              <h5 class="footer-heading">Jam Operasional</h5>
+              <div class="footer-hours">
+                <p>Senin - Jumat: 09:30 - 18:00</p>
+                <p>Sabtu: 09:30 - 17:00</p>
+                <p>Minggu: Tutup</p>
+              </div>
+              <div class="footer-links mt-3">
+                <a href="{{ url_for('products') }}">Produk</a>
+                <a href="{{ url_for('store_info') }}">Tentang Kami</a>
+                <a href="{{ url_for('return_policy') }}"
+                  >Kebijakan Pengembalian Barang dan Dana</a
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer bottom -->
+          <div class="footer-bottom text-center mt-3">
+            <p>&copy; 2025 HurtRock Music Store. All rights reserved.</p>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Authentication status -->
+    <script>
+      var userAuthenticated = {{ 'true' if current_user.is_authenticated else 'false' }};
+    </script>
+
+    <!-- User data -->
+    {% if current_user.is_authenticated %}
+    <div
+      id="user-data"
+      data-user-id="{{ current_user.id }}"
+      data-user-name="{{ current_user.name }}"
+      data-user-email="{{ current_user.email }}"
+      data-user-role="{{ current_user.role }}"
+      style="display: none"
+    ></div>
+    {% endif %}
+
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+    <!-- Floating Chat JS -->
+    <script src="{{ url_for('static', filename='js/floating-chat.js') }}"></script>
+
+    {% block extra_scripts %}{% endblock %}
+  </body>
+</html>

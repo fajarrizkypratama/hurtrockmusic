@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout - Hurtrock Music Store{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width: 1400px; margin: 30px auto; padding: 0 20px;">
+<h1 class="mb-4">Checkout</h1>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-orange text-white">
+                <h5 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Ringkasan Pesanan</h5>
+            </div>
+            <div class="card-body">
+                {% for item in cart_items %}
+                <div class="row align-items-center mb-3 pb-3 {% if not loop.last %}border-bottom{% endif %}">
+                    <div class="col-md-2">
+                        <img src="{{ item.product.image_url or '/static/images/placeholder.jpg' }}" 
+                             class="img-fluid rounded" alt="{{ item.product.name }}"
+                             style="max-height: 80px; object-fit: cover;">
+                    </div>
+                    <div class="col-md-5">
+                        <h6 class="mb-1">{{ item.product.name }}</h6>
+                        <p class="text-muted small mb-0">{{ item.product.brand or '' }} {{ item.product.model or '' }}</p>
+                    </div>
+                    <div class="col-md-2">
+                        <span class="fw-bold">{{ item.product.formatted_price }}</span>
+                    </div>
+                    <div class="col-md-1">
+                        <span class="text-muted">x{{ item.quantity }}</span>
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <span class="fw-bold">Rp {{ "{:,.0f}".format(item.subtotal).replace(',', '.') }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="h5 mb-0">Total:</span>
+                    <span class="h4 mb-0 text-orange fw-bold">Rp {{ "{:,.0f}".format(total).replace(',', '.') }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Pembayaran</h5>
+            </div>
+            <div class="card-body">
+                {% if current_user.is_buyer and (not current_user.address or not current_user.phone) %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Profile belum lengkap!</strong> 
+                    <a href="{{ url_for('profile') }}" class="alert-link">Lengkapi profile</a> 
+                    untuk melakukan pembelian.
+                </div>
+                {% endif %}
+                
+                <!-- Payment Provider Selection -->
+                <div class="mb-4">
+                    <h6 class="mb-3"><i class="fas fa-credit-card me-2"></i>Pilih Metode Pembayaran:</h6>
+                    {% for config in payment_configs %}
+                    <div class="payment-provider-card mb-3" data-provider="{{ config.provider }}">
+                        <div class="card border-2 payment-option" data-config-id="{{ config.id }}">
+                            <div class="card-body py-3">
+                                <div class="row align-items-center">
+                                    <div class="col-1">
+                                        <input type="radio" name="payment_provider" value="{{ config.id }}" 
+                                               id="provider_{{ config.id }}" class="form-check-input" 
+                                               {% if loop.first %}checked{% endif %}>
+                                    </div>
+                                    <div class="col-2">
+                                        {% if config.provider == 'midtrans' %}
+                                            <i class="fas fa-mobile-alt fa-2x text-info"></i>
+                                        {% elif config.provider == 'stripe' %}
+                                            <i class="fab fa-stripe fa-2x text-primary"></i>
+                                        {% elif config.provider == 'xendit' %}
+                                            <i class="fas fa-wallet fa-2x text-warning"></i>
+                                        {% elif config.provider == 'doku' %}
+                                            <i class="fas fa-university fa-2x text-success"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-9">
+                                        <label for="provider_{{ config.id }}" class="form-check-label w-100">
+                                            <strong>{{ config.provider.title() }}</strong>
+                                            <div class="small text-muted">
+                                                {% if config.provider == 'midtrans' %}
+                                                    Bank Transfer, Virtual Account, E-Wallet, Credit Card
+                                                {% elif config.provider == 'stripe' %}
+                                                    International Credit Cards, Global Payment Methods
+                                                {% elif config.provider == 'xendit' %}
+                                                    OVO, DANA, LinkAja, ShopeePay, Virtual Account
+                                                {% elif config.provider == 'doku' %}
+                                                    Virtual Account, Direct Debit, Credit Card
+                                                {% endif %}
+                                            </div>
+                                            {% if config.is_sandbox %}
+                                                <span class="badge bg-warning text-dark small">Mode Testing</span>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="payment-info mb-4">
+                    <h6>Metode Pembayaran yang Diterima:</h6>
+                    <div class="row text-center">
+                        <div class="col-6 mb-2">
+                            <i class="fab fa-cc-visa fa-2x text-primary"></i>
+                            <div class="small">Visa</div>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <i class="fab fa-cc-mastercard fa-2x text-warning"></i>
+                            <div class="small">Mastercard</div>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <i class="fas fa-university fa-2x text-success"></i>
+                            <div class="small">Bank Transfer</div>
+                        </div>
+                        <div class="col-6 mb-2">
+                            <i class="fas fa-wallet fa-2x text-info"></i>
+                            <div class="small">E-Wallet</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <form method="POST" action="{{ url_for('create_checkout_session') }}" id="checkoutForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" name="payment_config_id" id="selectedPaymentConfig" value="{{ payment_configs[0].id if payment_configs }}">
+                    <div class="mb-3">
+                        <label for="shipping_service" class="form-label">
+                            <i class="fas fa-shipping-fast me-2"></i>Pilih Jasa Pengiriman:
+                        </label>
+                        <select name="shipping_service_id" id="shipping_service" class="form-select" required>
+                            <option value="">-- Pilih Jasa Pengiriman --</option>
+                            {% for option in shipping_options %}
+                            <option value="{{ option.service.id }}" data-cost="{{ option.cost }}">
+                                {{ option.service.name }} - Rp {{ "{:,.0f}".format(option.cost).replace(',', '.') }} 
+                                ({{ option.delivery_estimate }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="total-summary mb-3 p-3 bg-light rounded">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal Produk:</span>
+                            <span>Rp {{ "{:,.0f}".format(subtotal).replace(',', '.') }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Ongkos Kirim:</span>
+                            <span id="shippingCost">Rp 0</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <strong>Total Pembayaran:</strong>
+                            <strong class="text-orange" id="totalAmount">Rp {{ "{:,.0f}".format(subtotal).replace(',', '.') }}</strong>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-orange btn-lg w-100 mb-3">
+                        <i class="fas fa-lock me-2"></i>Bayar Sekarang
+                    </button>
+                </form>
+                
+                <div class="text-center">
+                    <a href="{{ url_for('cart') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Kembali ke Keranjang
+                    </a>
+                </div>
+                
+                <div class="security-badges mt-4 text-center">
+                    <small class="text-muted">
+                        <i class="fas fa-shield-alt me-1"></i>Pembayaran 100% Aman<br>
+                        <i class="fas fa-lock me-1"></i>SSL Encrypted
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm mt-4">
+            <div class="card-body">
+                <h6><i class="fas fa-truck me-2 text-orange"></i>Informasi Pengiriman</h6>
+                <ul class="list-unstyled small mb-0">
+                    <li><i class="fas fa-check text-success me-2"></i>Gratis ongkos kirim untuk pembelian di atas Rp 500.000</li>
+                    <li><i class="fas fa-clock text-warning me-2"></i>Estimasi pengiriman 2-5 hari kerja</li>
+                    <li><i class="fas fa-box text-info me-2"></i>Packaging aman dan rapi</li>
+                    <li><i class="fas fa-phone text-primary me-2"></i>Customer service 24/7</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Payment provider selection
+    const paymentOptions = document.querySelectorAll('.payment-option');
+    const selectedPaymentConfig = document.getElementById('selectedPaymentConfig');
+    
+    paymentOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            const radio = this.querySelector('input[type="radio"]');
+            radio.checked = true;
+            selectedPaymentConfig.value = radio.value;
+            
+            // Update visual selection
+            paymentOptions.forEach(opt => opt.classList.remove('border-primary'));
+            this.classList.add('border-primary');
+        });
+    });
+    
+    // Shipping cost calculation
+    const shippingSelect = document.getElementById('shipping_service');
+    const shippingCostElement = document.getElementById('shippingCost');
+    const totalAmountElement = document.getElementById('totalAmount');
+    const subtotal = {{ subtotal }};
+    
+    shippingSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const cost = selectedOption.dataset.cost || 0;
+        const total = subtotal + parseFloat(cost);
+        
+        shippingCostElement.textContent = 'Rp ' + parseFloat(cost).toLocaleString('id-ID');
+        totalAmountElement.textContent = 'Rp ' + total.toLocaleString('id-ID');
+    });
+    
+    // Form validation
+    document.getElementById('checkoutForm').addEventListener('submit', function(e) {
+        const shippingService = document.getElementById('shipping_service').value;
+        if (!shippingService) {
+            e.preventDefault();
+            alert('Silakan pilih jasa pengiriman!');
+            return false;
+        }
+    });
+});
+</script>
+</div>
+{% endblock %}

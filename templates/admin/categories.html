@@ -1,0 +1,233 @@
+
+{% extends "admin/base.html" %}
+
+{% block title %}Kelola Kategori - Admin{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow mb-3">
+            <div class="card-body">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" id="categorySearchInput" class="form-control border-start-0 bg-light" 
+                           placeholder="Cari kategori berdasarkan ID atau Nama..." autocomplete="off">
+                    <button class="btn btn-outline-secondary" type="button" onclick="clearCategorySearch()">
+                        <i class="fas fa-times"></i> Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow">
+            <div class="card-header">
+                <h5 class="mb-0">Daftar Kategori</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nama</th>
+                                <th>Deskripsi</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for category in categories %}
+                            <tr>
+                                <td>{{ category.id }}</td>
+                                <td>{{ category.name }}</td>
+                                <td>{{ category.description or '-' }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if category.is_active else 'secondary' }}">
+                                        {{ 'Aktif' if category.is_active else 'Nonaktif' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editCategory({{ category.id }}, '{{ category.name }}', '{{ category.description or '' }}', {{ category.is_active|lower }})" data-bs-toggle="modal" data-bs-target="#editCategoryModal">
+                                            <svg class="admin-svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M11 4H4C3.4 4 3 4.4 3 5V20C3 20.6 3.4 21 4 21H19C19.6 21 20 20.6 20 20V13" stroke="currentColor" stroke-width="2" fill="none"/>
+                                                <path d="M18.5 2.5C19.3 1.7 20.7 1.7 21.5 2.5S22.3 4.7 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                                            </svg>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteCategory({{ category.id }}, '{{ category.name }}')">
+                                            <svg class="admin-svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M3 6H5H21" stroke="currentColor" stroke-width="2"/>
+                                                <path d="M8 6V4C8 3.4 8.4 3 9 3H15C15.6 3 16 3.4 16 4V6M19 6V20C19 20.6 18.6 21 18 21H6C5.4 21 5 20.6 5 20V6H19Z" stroke="currentColor" stroke-width="2" fill="none"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-header">
+                <h5 class="mb-0">Tambah Kategori</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('admin_add_category') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Nama Kategori *</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Deskripsi</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">Tambah Kategori</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Category Modal -->
+<div class="modal fade" id="editCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Kategori</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editCategoryForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Kategori *</label>
+                        <input type="text" class="form-control" name="name" id="edit_category_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Deskripsi</label>
+                        <textarea class="form-control" name="description" id="edit_category_description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" name="is_active" id="edit_category_is_active">
+                            <label class="form-check-label" for="edit_category_is_active">Status Aktif</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Real-time category search
+const categorySearchInput = document.getElementById('categorySearchInput');
+let categorySearchTimeout;
+
+if (categorySearchInput) {
+    categorySearchInput.addEventListener('input', function(e) {
+        clearTimeout(categorySearchTimeout);
+        const query = this.value.toLowerCase().trim();
+        
+        categorySearchTimeout = setTimeout(() => {
+            filterCategories(query);
+        }, 300);
+    });
+}
+
+function filterCategories(query) {
+    const tableRows = document.querySelectorAll('table tbody tr');
+    let visibleCount = 0;
+    
+    tableRows.forEach(row => {
+        if (!query) {
+            row.style.display = '';
+            visibleCount++;
+            return;
+        }
+        
+        const categoryId = row.querySelector('td:nth-child(1)')?.textContent.toLowerCase() || '';
+        const categoryName = row.querySelector('td:nth-child(2)')?.textContent.toLowerCase() || '';
+        const categoryDesc = row.querySelector('td:nth-child(3)')?.textContent.toLowerCase() || '';
+        
+        const matches = categoryId.includes(query) || 
+                       categoryName.includes(query) || 
+                       categoryDesc.includes(query);
+        
+        row.style.display = matches ? '' : 'none';
+        if (matches) visibleCount++;
+    });
+    
+    showCategoryNoResults(visibleCount, query);
+}
+
+function showCategoryNoResults(count, query) {
+    let noResultsRow = document.getElementById('categoryNoResultsRow');
+    
+    if (count === 0 && query.length > 0) {
+        if (!noResultsRow) {
+            const tbody = document.querySelector('table tbody');
+            noResultsRow = document.createElement('tr');
+            noResultsRow.id = 'categoryNoResultsRow';
+            noResultsRow.innerHTML = `
+                <td colspan="5" class="text-center py-4">
+                    <i class="fas fa-search fa-2x text-muted mb-3"></i>
+                    <h5 class="text-muted">Tidak ada kategori ditemukan</h5>
+                </td>
+            `;
+            tbody.appendChild(noResultsRow);
+        }
+        noResultsRow.style.display = '';
+    } else if (noResultsRow) {
+        noResultsRow.style.display = 'none';
+    }
+}
+
+function clearCategorySearch() {
+    const input = document.getElementById('categorySearchInput');
+    if (input) {
+        input.value = '';
+        filterCategories('');
+    }
+}
+
+function editCategory(id, name, description, isActive) {
+    document.getElementById('edit_category_name').value = name;
+    document.getElementById('edit_category_description').value = description;
+    document.getElementById('edit_category_is_active').checked = isActive;
+    document.getElementById('editCategoryForm').action = `{{ url_for('admin_edit_category', category_id=0) }}`.replace('0', id);
+}
+
+function deleteCategory(id, name) {
+    if (confirm(`Apakah Anda yakin ingin menghapus kategori "${name}"?`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `{{ url_for('admin_delete_category', category_id=0) }}`.replace('0', id);
+        
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrf_token';
+        csrfToken.value = '{{ csrf_token() }}';
+        form.appendChild(csrfToken);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,34 @@
+
+[Unit]
+Description=Hurtrock Music Store - Flask Web Application
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/hurtrock-music-store
+Environment=PATH=/opt/hurtrock-music-store/.venv/bin
+ExecStart=/opt/hurtrock-music-store/.venv/bin/python main.py
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+# Security settings
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/hurtrock-music-store
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target

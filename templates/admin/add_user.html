@@ -1,0 +1,113 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Tambah User - Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-user-plus me-2"></i>Tambah User Baru</h2>
+    <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Kembali
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow border-0">
+            <div class="card-header bg-orange text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-edit me-2"></i>Formulir Tambah User
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">
+                                <i class="fas fa-user me-1"></i>Nama Lengkap
+                            </label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">
+                                <i class="fas fa-envelope me-1"></i>Email
+                            </label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock me-1"></i>Password
+                            </label>
+                            <input type="password" class="form-control" id="password" name="password" required minlength="6">
+                            <small class="form-text text-muted">Minimal 6 karakter</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="role" class="form-label">
+                                <i class="fas fa-user-tag me-1"></i>Role
+                            </label>
+                            <select class="form-select" id="role" name="role" required>
+                                <option value="">Pilih Role</option>
+                                <option value="buyer">Buyer (Pelanggan)</option>
+                                <option value="staff">Staff</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Penjelasan Role:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li><strong>Buyer:</strong> Pelanggan biasa, bisa berbelanja</li>
+                            <li><strong>Staff:</strong> Bisa mengakses admin panel dan kelola produk</li>
+                            <li><strong>Admin:</strong> Akses penuh ke seluruh sistem</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('admin_users') }}" class="btn btn-secondary me-2">
+                            <i class="fas fa-times me-1"></i>Batal
+                        </a>
+                        <button type="submit" class="btn btn-orange">
+                            <i class="fas fa-plus me-1"></i>Tambah User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const password = document.getElementById('password').value;
+        if (password.length < 6) {
+            e.preventDefault();
+            alert('Password harus minimal 6 karakter!');
+            return false;
+        }
+        
+        const email = document.getElementById('email').value;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            e.preventDefault();
+            alert('Format email tidak valid!');
+            return false;
+        }
+        
+        return confirm('Yakin ingin menambahkan user ini?');
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,1856 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kasir POS - Hurtrock Music Store</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --beige-primary: #f5f0e8;
+        --beige-secondary: #ede7dc;
+        --orange-primary: #e67e3f;
+        --orange-hover: #d46f32;
+        --text-dark: #2c2c2c;
+        --text-medium: #4a4a4a;
+        --text-light: #6b6b6b;
+        --white: #ffffff;
+        --border-light: #d4cdc3;
+        --success: #27ae60;
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+        --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", sans-serif;
+        background: var(--beige-primary);
+        color: var(--text-dark);
+        overflow: hidden;
+      }
+
+      .cashier-container {
+        display: grid;
+        grid-template-columns: 1fr 450px;
+        height: 100vh;
+      }
+
+      /* Header */
+      .cashier-header {
+        grid-column: 1 / -1;
+        background: var(--white);
+        border-bottom: 1px solid var(--border-light);
+        padding: 1.25rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+      }
+
+      .header-left h1 {
+        font-family: "Playfair Display", serif;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--orange-primary);
+        letter-spacing: 1px;
+      }
+
+      .status-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--beige-secondary);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        color: var(--text-medium);
+        font-weight: 500;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--success);
+        animation: pulse 2s infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 0.75rem;
+      }
+
+      .header-btn {
+        background: var(--beige-secondary);
+        border: none;
+        padding: 0.625rem 1.25rem;
+        border-radius: 8px;
+        color: var(--text-dark);
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+      }
+
+      .header-btn:hover {
+        background: var(--orange-primary);
+        color: white;
+      }
+
+      /* Product Panel */
+      .product-panel {
+        background: var(--white);
+        padding: 2rem;
+        overflow-y: auto;
+        border-right: 1px solid var(--border-light);
+      }
+
+      .search-bar {
+        background: var(--beige-secondary);
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .search-bar input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: var(--text-dark);
+        font-size: 0.95rem;
+        outline: none;
+      }
+
+      .search-bar i {
+        color: var(--orange-primary);
+      }
+
+      .category-tabs {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        overflow-x: auto;
+        padding-bottom: 0.75rem;
+      }
+
+      .category-tab {
+        background: var(--beige-secondary);
+        border: 1px solid var(--border-light);
+        padding: 0.625rem 1.25rem;
+        border-radius: 20px;
+        color: var(--text-medium);
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.3s;
+        font-weight: 500;
+        font-size: 0.875rem;
+      }
+
+      .category-tab.active {
+        background: var(--orange-primary);
+        color: white;
+        border-color: var(--orange-primary);
+      }
+
+      .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 1.25rem;
+      }
+
+      .product-item {
+        background: var(--white);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
+        padding: 1rem;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .product-item:hover {
+        border-color: var(--orange-primary);
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-md);
+      }
+
+      .product-item.out-of-stock {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      .product-img {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-bottom: 0.75rem;
+        background: var(--beige-secondary);
+      }
+
+      .product-name {
+        color: var(--text-dark);
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+
+      .product-price {
+        color: var(--orange-primary);
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .product-stock {
+        color: var(--text-light);
+        font-size: 0.75rem;
+        margin-top: 0.375rem;
+      }
+
+      /* Transaction Panel */
+      .transaction-panel {
+        background: var(--white);
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        padding-top: 80px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .cart-header {
+        padding: 1.5rem 1.75rem;
+        border-bottom: 1px solid var(--border-light);
+        flex-shrink: 0;
+      }
+
+      .cart-header h2 {
+        color: var(--text-dark);
+        font-size: 1.125rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+      }
+
+      .buyer-input {
+        width: 100%;
+        background: var(--beige-secondary);
+        border: 1px solid var(--border-light);
+        padding: 0.875rem;
+        border-radius: 8px;
+        color: var(--text-dark);
+        font-size: 0.875rem;
+      }
+
+      .buyer-input:focus {
+        outline: none;
+        border-color: var(--orange-primary);
+      }
+
+      .cart-items {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.25rem 1.75rem;
+        padding-bottom: 520px;
+        min-height: 0;
+      }
+
+      .cart-item {
+        background: var(--beige-secondary);
+        border: 1px solid var(--border-light);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .cart-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 0.75rem;
+      }
+
+      .cart-item-name {
+        color: var(--text-dark);
+        font-weight: 600;
+        font-size: 0.875rem;
+      }
+
+      .cart-item-remove {
+        background: none;
+        border: none;
+        color: #e74c3c;
+        cursor: pointer;
+        padding: 0.25rem;
+        font-size: 1rem;
+      }
+
+      .cart-item-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .quantity-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .qty-btn {
+        background: var(--orange-primary);
+        border: none;
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        color: white;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.3s;
+      }
+
+      .qty-btn:hover {
+        background: var(--orange-hover);
+      }
+
+      .qty-display {
+        color: var(--text-dark);
+        font-weight: 600;
+        min-width: 30px;
+        text-align: center;
+      }
+
+      .cart-item-price {
+        color: var(--orange-primary);
+        font-weight: 700;
+      }
+
+      .cart-footer {
+        background: var(--beige-secondary);
+        padding: 1.5rem 1.75rem;
+        border-top: 1px solid var(--border-light);
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        width: 450px;
+        z-index: 100;
+        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+        overflow-y: auto;
+        max-height: 500px;
+      }
+
+      .payment-methods {
+        margin-bottom: 1.25rem;
+      }
+
+      .payment-methods label {
+        color: var(--text-medium);
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 0.625rem;
+        display: block;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .payment-buttons {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.625rem;
+      }
+
+      .payment-btn {
+        background: var(--white);
+        border: 1px solid var(--border-light);
+        padding: 0.75rem;
+        border-radius: 8px;
+        color: var(--text-medium);
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 0.8rem;
+        font-weight: 500;
+      }
+
+      .payment-btn.active {
+        background: var(--orange-primary);
+        color: white;
+        border-color: var(--orange-primary);
+      }
+
+      .total-section {
+        margin: 1.25rem 0;
+      }
+
+      .total-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+      }
+
+      .total-label {
+        color: var(--text-medium);
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      .total-value {
+        color: var(--text-dark);
+        font-weight: 600;
+      }
+
+      .grand-total {
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-light);
+      }
+
+      .grand-total .total-label {
+        font-size: 1.125rem;
+        color: var(--text-dark);
+        font-weight: 700;
+      }
+
+      .grand-total .total-value {
+        font-size: 1.5rem;
+        color: var(--orange-primary);
+        font-weight: 700;
+      }
+
+      .payment-input-section {
+        background: #fff3e0;
+        padding: 1.25rem;
+        border-radius: 10px;
+        margin-bottom: 1.25rem;
+        border: 1px solid #ffb74d;
+      }
+
+      .payment-input-group {
+        margin-bottom: 0.875rem;
+      }
+
+      .payment-input-group label {
+        display: block;
+        color: var(--text-medium);
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .payment-input {
+        width: 100%;
+        padding: 0.875rem;
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text-dark);
+      }
+
+      .payment-input:focus {
+        outline: none;
+        border-color: var(--orange-primary);
+      }
+
+      .change-display {
+        background: #d4edda;
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+        margin-top: 0.875rem;
+      }
+
+      .change-label {
+        font-size: 0.75rem;
+        color: #155724;
+        font-weight: 600;
+        margin-bottom: 0.375rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .change-amount {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--success);
+      }
+
+      .checkout-btn,
+      .print-btn {
+        width: 100%;
+        background: var(--orange-primary);
+        border: none;
+        padding: 1.25rem;
+        border-radius: 10px;
+        color: white;
+        font-weight: 700;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 12px rgba(230, 126, 63, 0.3);
+      }
+
+      .checkout-btn:hover:not(:disabled),
+      .print-btn:hover {
+        background: var(--orange-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(230, 126, 63, 0.4);
+      }
+
+      .checkout-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+
+      .checkout-btn:not(:disabled) {
+        animation: pulse-orange 2s infinite;
+      }
+
+      @keyframes pulse-orange {
+        0%,
+        100% {
+          box-shadow: 0 4px 12px rgba(230, 126, 63, 0.3);
+        }
+        50% {
+          box-shadow: 0 4px 20px rgba(230, 126, 63, 0.5);
+        }
+      }
+
+      .print-btn {
+        background: var(--success);
+        margin-top: 0.75rem;
+      }
+
+      .empty-cart {
+        text-align: center;
+        padding: 3rem 1.5rem;
+        color: var(--text-light);
+      }
+
+      .empty-cart i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: var(--text-light);
+      }
+
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: var(--beige-secondary);
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: var(--orange-primary);
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--orange-hover);
+      }
+
+      /* Notification Styles */
+      .alert {
+        padding: 0.75rem 1.25rem;
+        margin-bottom: 1rem;
+        border: 1px solid transparent;
+        border-radius: 0.25rem;
+      }
+
+      .alert-info {
+        color: #0c5460;
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+      }
+
+      .alert-success {
+        color: #155724;
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+      }
+
+      .alert-warning {
+        color: #856404;
+        background-color: #fff3cd;
+        border-color: #ffeeba;
+      }
+
+      .alert-danger {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="cashier-container">
+      <div class="cashier-header">
+        <div class="header-left">
+          <h1><i class="fas fa-cash-register"></i> KASIR POS</h1>
+          <div class="status-badge">
+            <div class="status-dot"></div>
+            <span>Sistem Online</span>
+          </div>
+        </div>
+        <div class="header-actions">
+          <a href="/cashier/transactions" class="header-btn">
+            <i class="fas fa-history"></i> Riwayat
+          </a>
+          <a href="/" class="header-btn">
+            <i class="fas fa-home"></i> Dashboard
+          </a>
+        </div>
+      </div>
+
+      <div class="product-panel">
+        <div class="search-bar">
+          <i class="fas fa-search"></i>
+          <input
+            type="text"
+            id="searchProduct"
+            placeholder="Cari GTIN, ID, atau Nama Produk (Enter/Scan = Auto Tambah)"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="category-tabs">
+          <div class="category-tab active" onclick="filterByCategory('all')">
+            <i class="fas fa-th"></i> Semua
+          </div>
+          {% for category in categories %}
+          <div
+            class="category-tab"
+            onclick="filterByCategory('{{ category.id }}')"
+          >
+            {{ category.name }}
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="product-grid" id="productGrid">
+          {% for product in products %}
+          <div
+            class="product-item {% if product.stock_quantity <= 0 %}out-of-stock{% endif %}"
+            data-category="{{ product.category_id }}"
+            data-product-id="{{ product.id }}"
+            data-product-name="{{ product.name }}"
+            data-product-price="{{ product.price }}"
+            data-product-gtin="{{ product.gtin }}"
+            data-product-stock="{{ product.stock_quantity }}"
+            onclick="addToCart({{ product.id }}, '{{ product.name }}', {{ product.price }}, {{ product.stock_quantity }})"
+          >
+            <img
+              src="{{ product.image_url or 'https://via.placeholder.com/180x120/EDE7DC/E67E3F?text=Produk' }}"
+              class="product-img"
+              alt="{{ product.name }}"
+              onerror="this.src='https://via.placeholder.com/180x120/EDE7DC/E67E3F?text=No+Image'"
+            />
+            <div class="product-name">{{ product.name[:30] }}...</div>
+            <div class="product-price">
+              Rp {{ "{:,.0f}".format(product.price).replace(',', '.') }}
+            </div>
+            <div class="product-stock">Stok: {{ product.stock_quantity }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="transaction-panel">
+        <div class="cart-header">
+          <h2><i class="fas fa-shopping-cart"></i> Keranjang Belanja</h2>
+          <input
+            type="text"
+            id="buyerName"
+            class="buyer-input"
+            placeholder="Nama Pembeli *"
+            onkeyup="updateCheckoutButton()"
+          />
+        </div>
+
+        <div class="cart-items" id="cartItems">
+          <div class="empty-cart">
+            <i class="fas fa-shopping-basket"></i>
+            <p>Keranjang masih kosong</p>
+            <small>Klik produk untuk menambah ke keranjang</small>
+          </div>
+        </div>
+
+        <div class="cart-footer">
+          <div class="payment-methods">
+            <label>Metode Pembayaran</label>
+            <div class="payment-buttons">
+              <button
+                class="payment-btn active"
+                onclick="selectPayment('cash')"
+              >
+                <i class="fas fa-money-bill"></i> Cash
+              </button>
+              <button class="payment-btn" onclick="selectPayment('debit')">
+                <i class="fas fa-credit-card"></i> Debit
+              </button>
+              <button class="payment-btn" onclick="selectPayment('qris')">
+                <i class="fas fa-qrcode"></i> QRIS
+              </button>
+            </div>
+          </div>
+
+          <div class="total-section">
+            <div class="total-row">
+              <span class="total-label">Subtotal</span>
+              <span class="total-value" id="subtotal">Rp 0</span>
+            </div>
+            <div class="total-row grand-total">
+              <span class="total-label">TOTAL</span>
+              <span class="total-value" id="total">Rp 0</span>
+            </div>
+          </div>
+
+          <div class="payment-input-section" id="paymentInputSection">
+            <div class="payment-input-group">
+              <label>Uang Diterima</label>
+              <input
+                type="number"
+                id="paymentAmount"
+                class="payment-input"
+                placeholder="0"
+                oninput="calculateChange()"
+              />
+            </div>
+            <div
+              class="change-display"
+              id="changeDisplay"
+              style="display: none"
+            >
+              <div class="change-label">Kembalian</div>
+              <div class="change-amount" id="changeAmount">Rp 0</div>
+            </div>
+          </div>
+
+          <button
+            class="checkout-btn"
+            id="checkoutBtn"
+            onclick="processTransaction()"
+            disabled
+          >
+            <i class="fas fa-check-circle"></i> BAYAR
+          </button>
+
+          <button
+            class="print-btn"
+            id="printBtn"
+            onclick="showPrintModal()"
+            style="display: none"
+          >
+            <i class="fas fa-print"></i> CETAK STRUK
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Cetak Struk dengan Preview -->
+    <div
+      id="printModal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        overflow-y: auto;
+        padding: 20px;
+      "
+    >
+      <div
+        style="
+          background: white;
+          padding: 2rem;
+          border-radius: 12px;
+          max-width: 900px;
+          width: 95%;
+          max-height: 90vh;
+          overflow-y: auto;
+        "
+      >
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--orange-primary);
+            padding-bottom: 1rem;
+          "
+        >
+          <h3 style="margin: 0; color: var(--text-dark)">
+            <i class="fas fa-print"></i> Preview & Cetak Struk
+          </h3>
+          <button
+            onclick="closePrintModal()"
+            style="
+              background: none;
+              border: none;
+              font-size: 1.5rem;
+              color: var(--text-medium);
+              cursor: pointer;
+              padding: 0.5rem;
+            "
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem">
+          <!-- Preview Struk -->
+          <div
+            style="
+              background: var(--beige-secondary);
+              padding: 1.5rem;
+              border-radius: 8px;
+              border: 1px solid var(--border-light);
+            "
+          >
+            <h4
+              style="
+                margin-bottom: 1rem;
+                color: var(--text-dark);
+                text-align: center;
+              "
+            >
+              <i class="fas fa-receipt"></i> Preview Struk
+            </h4>
+            <div
+              id="receiptPreview"
+              style="
+                background: white;
+                padding: 1.5rem;
+                border-radius: 8px;
+                font-family: monospace;
+                font-size: 0.85rem;
+                line-height: 1.6;
+                border: 2px dashed var(--border-light);
+                max-height: 500px;
+                overflow-y: auto;
+              "
+            >
+              <!-- Preview akan di-generate oleh JavaScript -->
+            </div>
+          </div>
+
+          <!-- Opsi Cetak -->
+          <div>
+            <h4 style="margin-bottom: 1rem; color: var(--text-dark)">
+              <i class="fas fa-cog"></i> Pengaturan Cetak
+            </h4>
+
+            <div style="margin-bottom: 1.5rem">
+              <label
+                style="
+                  display: block;
+                  margin-bottom: 0.5rem;
+                  color: var(--text-medium);
+                  font-weight: 600;
+                "
+              >
+                <i class="fas fa-ruler"></i> Ukuran Kertas Thermal
+              </label>
+              <select
+                id="paperSize"
+                onchange="updateReceiptPreview()"
+                style="
+                  width: 100%;
+                  padding: 0.875rem;
+                  border: 1px solid var(--border-light);
+                  border-radius: 8px;
+                  font-size: 0.95rem;
+                "
+              >
+                <option value="58">58mm (Kecil - Mobile Receipt)</option>
+                <option value="80" selected>
+                  80mm (Standard - POS Receipt)
+                </option>
+                <option value="120">120mm (Besar - A4 Receipt)</option>
+              </select>
+              <small
+                style="
+                  color: var(--text-light);
+                  display: block;
+                  margin-top: 0.5rem;
+                "
+              >
+                <i class="fas fa-info-circle"></i> Pilih sesuai ukuran printer
+                thermal Anda
+              </small>
+            </div>
+
+            <div
+              style="
+                background: #fff3e0;
+                padding: 1rem;
+                border-radius: 8px;
+                margin-bottom: 1.5rem;
+                border-left: 4px solid var(--orange-primary);
+              "
+            >
+              <h5 style="margin: 0 0 0.5rem 0; color: var(--orange-primary)">
+                <i class="fas fa-info-circle"></i> Informasi Transaksi
+              </h5>
+              <div style="font-size: 0.85rem; color: var(--text-medium)">
+                <p style="margin: 0.25rem 0">
+                  <strong>No. Transaksi:</strong>
+                  <span id="modalTransactionId">-</span>
+                </p>
+                <p style="margin: 0.25rem 0">
+                  <strong>Kasir:</strong> {{ current_user.name }}
+                </p>
+                <p style="margin: 0.25rem 0">
+                  <strong>Total:</strong> <span id="modalTotal">Rp 0</span>
+                </p>
+                <p style="margin: 0.25rem 0">
+                  <strong>Uang Diterima:</strong>
+                  <span id="modalPayment">Rp 0</span>
+                </p>
+                <p style="margin: 0.25rem 0">
+                  <strong>Kembalian:</strong> <span id="modalChange">Rp 0</span>
+                </p>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; flex-direction: column">
+              <button
+                onclick="printToPrinter()"
+                style="
+                  width: 100%;
+                  background: var(--orange-primary);
+                  border: none;
+                  padding: 1rem;
+                  border-radius: 8px;
+                  color: white;
+                  font-weight: 600;
+                  cursor: pointer;
+                  font-size: 1rem;
+                  transition: all 0.3s;
+                "
+                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(230, 126, 63, 0.3)'"
+                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'"
+              >
+                <i class="fas fa-print"></i> Cetak ke Printer Thermal
+              </button>
+
+              <button
+                onclick="downloadPDF()"
+                style="
+                  width: 100%;
+                  background: #27ae60;
+                  border: none;
+                  padding: 1rem;
+                  border-radius: 8px;
+                  color: white;
+                  font-weight: 600;
+                  cursor: pointer;
+                  font-size: 1rem;
+                  transition: all 0.3s;
+                "
+                onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(39, 174, 96, 0.3)'"
+                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'"
+              >
+                <i class="fas fa-file-pdf"></i> Download PDF
+              </button>
+
+              <button
+                onclick="skipPrint()"
+                style="
+                  width: 100%;
+                  background: var(--beige-secondary);
+                  border: 1px solid var(--border-light);
+                  padding: 1rem;
+                  border-radius: 8px;
+                  color: var(--text-dark);
+                  font-weight: 600;
+                  cursor: pointer;
+                  font-size: 1rem;
+                  transition: all 0.3s;
+                "
+                onmouseover="this.style.background='var(--border-light)'"
+                onmouseout="this.style.background='var(--beige-secondary)'"
+              >
+                <i class="fas fa-times"></i> Lewati & Selesai
+              </button>
+            </div>
+
+            <div
+              style="
+                margin-top: 1rem;
+                padding: 0.75rem;
+                background: #e8f5e9;
+                border-radius: 8px;
+                font-size: 0.8rem;
+                color: #2e7d32;
+              "
+            >
+              <i class="fas fa-check-circle"></i> Transaksi telah tersimpan
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let cart = [];
+      let selectedPaymentMethod = "cash";
+      let allProducts = [];
+      let currentCategory = "all";
+      let lastTransactionId = null;
+      let searchTimeout; // Debounce timeout for search
+
+      function addToCart(productId, productName, productPrice, stock) {
+        if (stock <= 0) {
+          alert("Produk habis!");
+          return;
+        }
+
+        const existingItem = cart.find((item) => item.id === productId);
+
+        if (existingItem) {
+          if (existingItem.quantity >= stock) {
+            alert("Stok tidak mencukupi!");
+            return;
+          }
+          existingItem.quantity++;
+          existingItem.subtotal = existingItem.quantity * existingItem.price;
+        } else {
+          cart.push({
+            id: productId,
+            name: productName,
+            price: productPrice,
+            quantity: 1,
+            subtotal: productPrice,
+          });
+        }
+
+        updateCartDisplay();
+        saveCartToStorage();
+      }
+
+      function updateQuantity(productId, change) {
+        const item = cart.find((item) => item.id === productId);
+        if (!item) return;
+
+        // Find the product in the global allProducts list to check stock
+        const product = allProducts.find((p) => p.id === productId);
+        if (!product) {
+          console.error("Product not found in allProducts:", productId);
+          return; // Should not happen if allProducts is populated correctly
+        }
+
+        const newQuantity = item.quantity + change;
+
+        if (newQuantity <= 0) {
+          removeFromCart(productId);
+          return;
+        }
+
+        if (newQuantity > product.stock) {
+          alert("Stok tidak mencukupi!");
+          return;
+        }
+
+        item.quantity = newQuantity;
+        item.subtotal = item.quantity * item.price;
+        updateCartDisplay();
+        saveCartToStorage();
+      }
+
+      function removeFromCart(productId) {
+        cart = cart.filter((item) => item.id !== productId);
+        updateCartDisplay();
+        saveCartToStorage();
+      }
+
+      function updateCartDisplay() {
+        const cartItemsContainer = document.getElementById("cartItems");
+
+        if (cart.length === 0) {
+          cartItemsContainer.innerHTML = `
+                    <div class="empty-cart">
+                        <i class="fas fa-shopping-basket"></i>
+                        <p>Keranjang masih kosong</p>
+                        <small>Klik produk untuk menambah ke keranjang</small>
+                    </div>
+                `;
+          document.getElementById("paymentInputSection").style.display = "none";
+        } else {
+          cartItemsContainer.innerHTML = cart
+            .map(
+              (item) => `
+                    <div class="cart-item">
+                        <div class="cart-item-header">
+                            <div class="cart-item-name">${item.name}</div>
+                            <button class="cart-item-remove" onclick="removeFromCart(${
+                              item.id
+                            })">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="cart-item-controls">
+                            <div class="quantity-controls">
+                                <button class="qty-btn" onclick="updateQuantity(${
+                                  item.id
+                                }, -1)">-</button>
+                                <span class="qty-display">${
+                                  item.quantity
+                                }</span>
+                                <button class="qty-btn" onclick="updateQuantity(${
+                                  item.id
+                                }, 1)">+</button>
+                            </div>
+                            <div class="cart-item-price">Rp ${item.subtotal.toLocaleString(
+                              "id-ID"
+                            )}</div>
+                        </div>
+                    </div>
+                `
+            )
+            .join("");
+          document.getElementById("paymentInputSection").style.display =
+            "block";
+        }
+
+        updateSummary();
+      }
+
+      function updateSummary() {
+        const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
+        const total = subtotal; // Assuming no discounts for now
+
+        document.getElementById(
+          "subtotal"
+        ).textContent = `Rp ${subtotal.toLocaleString("id-ID")}`;
+        document.getElementById(
+          "total"
+        ).textContent = `Rp ${total.toLocaleString("id-ID")}`;
+
+        updateCheckoutButton();
+      }
+
+      function updateCheckoutButton() {
+        const checkoutBtn = document.getElementById("checkoutBtn");
+        const buyerName = document.getElementById("buyerName").value.trim();
+        const paymentAmount =
+          parseFloat(document.getElementById("paymentAmount").value) || 0;
+        const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
+
+        // Enable button if: cart not empty, buyer name filled, and payment sufficient
+        const canCheckout =
+          cart.length > 0 && buyerName && paymentAmount >= total;
+        checkoutBtn.disabled = !canCheckout;
+
+        // Update button appearance
+        if (canCheckout) {
+          checkoutBtn.style.opacity = "1";
+          checkoutBtn.style.cursor = "pointer";
+        } else {
+          checkoutBtn.style.opacity = "0.5";
+          checkoutBtn.style.cursor = "not-allowed";
+        }
+      }
+
+      function selectPayment(method) {
+        selectedPaymentMethod = method;
+        document
+          .querySelectorAll(".payment-btn")
+          .forEach((btn) => btn.classList.remove("active"));
+        event.target.closest(".payment-btn").classList.add("active");
+      }
+
+      function calculateChange() {
+        const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
+        const paymentAmount =
+          parseFloat(document.getElementById("paymentAmount").value) || 0;
+        const change = paymentAmount - total;
+
+        const changeDisplay = document.getElementById("changeDisplay");
+        const changeAmount = document.getElementById("changeAmount");
+
+        if (paymentAmount > 0) {
+          changeDisplay.style.display = "block";
+          if (change >= 0) {
+            changeAmount.textContent = `Rp ${change.toLocaleString("id-ID")}`;
+            changeAmount.style.color = "#27ae60"; // Green for sufficient payment
+          } else {
+            changeAmount.textContent = `Kurang Rp ${Math.abs(
+              change
+            ).toLocaleString("id-ID")}`;
+            changeAmount.style.color = "#e74c3c"; // Red for insufficient payment
+          }
+        } else {
+          changeDisplay.style.display = "none";
+        }
+
+        // Always update checkout button when payment amount changes
+        updateCheckoutButton();
+      }
+
+      // Add event listeners when page loads
+      document.addEventListener("DOMContentLoaded", function () {
+        // Populate allProducts from the initial product grid
+        const productItems = document.querySelectorAll(".product-item");
+        productItems.forEach((item) => {
+          allProducts.push({
+            id: parseInt(item.dataset.productId),
+            name: item.dataset.productName,
+            price: parseFloat(item.dataset.productPrice),
+            stock: parseInt(item.dataset.productStock),
+            category: item.dataset.category,
+            gtin: item.dataset.productGtin, // Assuming GTIN is available
+          });
+        });
+
+        const savedCart = localStorage.getItem("cashier_cart");
+        if (savedCart) {
+          cart = JSON.parse(savedCart);
+          updateCartDisplay();
+        }
+
+        // Add input event listeners for buyer name and payment amount
+        const buyerNameInput = document.getElementById("buyerName");
+        const paymentAmountInput = document.getElementById("paymentAmount");
+
+        if (buyerNameInput) {
+          buyerNameInput.addEventListener("input", updateCheckoutButton);
+        }
+
+        if (paymentAmountInput) {
+          paymentAmountInput.addEventListener("input", calculateChange);
+        }
+
+        // Initial state for payment input section
+        calculateChange(); // This will also call updateCheckoutButton
+      });
+
+      function saveCartToStorage() {
+        localStorage.setItem("cashier_cart", JSON.stringify(cart));
+      }
+
+      function processTransaction() {
+        if (cart.length === 0) {
+          alert("Keranjang kosong!");
+          return;
+        }
+
+        const buyerName = document.getElementById("buyerName").value.trim();
+        if (!buyerName) {
+          alert("Nama pembeli wajib diisi!");
+          document.getElementById("buyerName").focus();
+          return;
+        }
+
+        const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
+        const paymentAmount =
+          parseFloat(document.getElementById("paymentAmount").value) || 0;
+
+        if (paymentAmount < total) {
+          alert("Uang yang diterima tidak mencukupi!");
+          return;
+        }
+
+        const transaction = {
+          local_transaction_id: generateTransactionId(), // Generate a unique ID locally
+          buyer_name: buyerName,
+          payment_method: selectedPaymentMethod,
+          total_amount: total,
+          payment_amount: paymentAmount,
+          items: cart.map((item) => ({
+            product_id: item.id,
+            product_name: item.name,
+            product_price: item.price,
+            quantity: item.quantity,
+            subtotal: item.subtotal,
+          })),
+        };
+
+        saveTransactionToServer(transaction);
+      }
+
+      function saveTransactionToServer(transaction) {
+        const checkoutBtn = document.getElementById("checkoutBtn");
+        checkoutBtn.disabled = true;
+        checkoutBtn.innerHTML =
+          '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+
+        fetch("/api/cashier/transaction/save", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(transaction),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((data) => {
+            if (data.success) {
+              lastTransactionId = transaction.local_transaction_id; // Use the locally generated ID for printing
+              alert("✅ Transaksi berhasil!");
+              document.getElementById("printBtn").style.display = "block";
+              checkoutBtn.style.display = "none";
+              document.getElementById("paymentInputSection").style.display =
+                "none"; // Hide payment input after successful checkout
+            } else {
+              throw new Error(data.error || "Unknown error");
+            }
+          })
+          .catch((error) => {
+            console.error("Error saving transaction:", error);
+            alert(`❌ Gagal menyimpan transaksi: ${error.message}`);
+            checkoutBtn.disabled = false;
+            checkoutBtn.innerHTML = '<i class="fas fa-check-circle"></i> BAYAR';
+          });
+      }
+
+      function showPrintModal() {
+        if (!lastTransactionId) {
+          alert(
+            "Tidak ada transaksi yang dapat dicetak. Silakan selesaikan transaksi terlebih dahulu."
+          );
+          return;
+        }
+
+        // Update modal info with current cart and payment details
+        const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
+        const paymentAmount =
+          parseFloat(document.getElementById("paymentAmount").value) || 0;
+        const change = paymentAmount - total;
+
+        document.getElementById("modalTransactionId").textContent =
+          lastTransactionId.substr(-10); // Display last 10 chars
+        document.getElementById(
+          "modalTotal"
+        ).textContent = `Rp ${total.toLocaleString("id-ID")}`;
+        document.getElementById(
+          "modalPayment"
+        ).textContent = `Rp ${paymentAmount.toLocaleString("id-ID")}`;
+        document.getElementById(
+          "modalChange"
+        ).textContent = `Rp ${change.toLocaleString("id-ID")}`;
+
+        // Generate preview based on selected paper size
+        updateReceiptPreview();
+
+        const modal = document.getElementById("printModal");
+        modal.style.display = "flex"; // Use flex to center vertically and horizontally
+      }
+
+      function closePrintModal() {
+        document.getElementById("printModal").style.display = "none";
+      }
+
+      function updateReceiptPreview() {
+        const paperSize = document.getElementById("paperSize").value;
+        const buyerName =
+          document.getElementById("buyerName").value.trim() || "Umum"; // Default to Umum if empty
+        const total = cart.reduce((sum, item) => sum + item.subtotal, 0);
+        const paymentAmount =
+          parseFloat(document.getElementById("paymentAmount").value) || 0;
+        const change = paymentAmount - total;
+
+        // Determine line width based on paper size (approximate characters per line)
+        let width = 32; // Default for 58mm
+        if (paperSize === "80") width = 42; // Standard for 80mm
+        if (paperSize === "120") width = 58; // Wider for 120mm
+
+        const separator = "=".repeat(width);
+        const dashedLine = "-".repeat(width);
+
+        let preview = "";
+        preview += centerText("HURTROCK MUSIC STORE", width) + "\n";
+        preview +=
+          centerText(
+            "Jl Gegerkalong Girang complex Darut Tauhid Kav 22",
+            width
+          ) + "\n";
+        preview += centerText("Bandung, Jawa Barat 40153", width) + "\n";
+        preview += centerText("Telp: 0821-1555-8035", width) + "\n";
+        preview += separator + "\n";
+        preview += `Tanggal: ${new Date().toLocaleDateString(
+          "id-ID"
+        )} ${new Date().toLocaleTimeString("id-ID")}\n`;
+        preview += `Kasir  : {{ current_user.name }}\n`;
+        preview += `No.Trx : ${
+          lastTransactionId ? lastTransactionId.substr(-10) : "-"
+        }\n`;
+        preview += `Pembeli: ${buyerName}\n`;
+        preview += separator + "\n";
+
+        cart.forEach((item) => {
+          const itemName = truncateText(item.name, width - 2); // Leave space for price
+          preview += itemName + "\n";
+          const qtyPrice = `${item.quantity} x ${formatRupiah(item.price)}`;
+          const subtotal = formatRupiah(item.subtotal);
+          const spacer = " ".repeat(
+            Math.max(1, width - qtyPrice.length - subtotal.length)
+          );
+          preview += qtyPrice + spacer + subtotal + "\n";
+        });
+
+        preview += dashedLine + "\n";
+        const totalLabel = "TOTAL:";
+        const totalValue = formatRupiah(total);
+        const totalSpacer = " ".repeat(
+          Math.max(1, width - totalLabel.length - totalValue.length)
+        );
+        preview += totalLabel + totalSpacer + totalValue + "\n";
+
+        const paymentLabel = "Bayar:";
+        const paymentValue = formatRupiah(paymentAmount);
+        const paymentSpacer = " ".repeat(
+          Math.max(1, width - paymentLabel.length - paymentValue.length)
+        );
+        preview += paymentLabel + paymentSpacer + paymentValue + "\n";
+
+        const changeLabel = "Kembali:";
+        const changeValue = formatRupiah(change);
+        const changeSpacer = " ".repeat(
+          Math.max(1, width - changeLabel.length - changeValue.length)
+        );
+        preview += changeLabel + changeSpacer + changeValue + "\n";
+
+        preview += separator + "\n";
+        preview += centerText("TERIMA KASIH", width) + "\n";
+        preview += centerText("Barang yang sudah dibeli", width) + "\n";
+        preview += centerText("tidak dapat dikembalikan", width) + "\n";
+
+        document.getElementById("receiptPreview").textContent = preview;
+      }
+
+      function centerText(text, width) {
+        const padding = Math.max(0, Math.floor((width - text.length) / 2));
+        return " ".repeat(padding) + text;
+      }
+
+      function truncateText(text, maxLength) {
+        if (text.length <= maxLength) return text;
+        return text.substr(0, maxLength - 3) + "...";
+      }
+
+      function formatRupiah(amount) {
+        return amount.toLocaleString("id-ID"); // Indonesian Rupiah format
+      }
+
+      function printToPrinter() {
+        const paperSize = document.getElementById("paperSize").value;
+
+        if (!lastTransactionId) {
+          alert("Tidak ada transaksi untuk dicetak");
+          return;
+        }
+
+        // Open print page in a new window, passing transaction ID and paper size
+        window.open(
+          `/cashier/print-receipt?transaction_id=${lastTransactionId}&size=${paperSize}`,
+          "_blank"
+        );
+
+        // Close modal and reset the transaction state after a short delay
+        setTimeout(() => {
+          closePrintModal();
+          resetTransaction();
+        }, 1000);
+      }
+
+      function downloadPDF() {
+        const paperSize = document.getElementById("paperSize").value;
+
+        if (!lastTransactionId) {
+          alert("Tidak ada transaksi untuk diunduh");
+          return;
+        }
+
+        // Download PDF by opening a new window with PDF format parameter
+        window.open(
+          `/cashier/print-receipt?transaction_id=${lastTransactionId}&size=${paperSize}&format=pdf`,
+          "_blank"
+        );
+
+        alert("File PDF sedang diunduh...");
+        // Don't reset transaction here, allow user to print again or close modal
+      }
+
+      function skipPrint() {
+        // Close the modal and reset the transaction state without printing
+        closePrintModal();
+        resetTransaction();
+      }
+
+      function resetTransaction() {
+        cart = []; // Clear the cart
+        updateCartDisplay(); // Update the cart display to show empty state
+        localStorage.removeItem("cashier_cart"); // Clear cart from local storage
+
+        document.getElementById("buyerName").value = ""; // Clear buyer name input
+        document.getElementById("paymentAmount").value = ""; // Clear payment amount input
+        document.getElementById("changeDisplay").style.display = "none"; // Hide change display
+
+        // Reset transaction buttons and display
+        document.getElementById("printBtn").style.display = "none"; // Hide print button
+        document.getElementById("checkoutBtn").style.display = "block"; // Show checkout button
+        document.getElementById("checkoutBtn").disabled = true; // Disable checkout button initially
+        document.getElementById("checkoutBtn").innerHTML =
+          '<i class="fas fa-check-circle"></i> BAYAR'; // Reset button text
+
+        // Reset payment method selection
+        selectedPaymentMethod = "cash";
+        document
+          .querySelectorAll(".payment-btn")
+          .forEach((btn) => btn.classList.remove("active"));
+        document
+          .querySelector(".payment-btn[onclick=\"selectPayment('cash')\"]")
+          .classList.add("active");
+
+        lastTransactionId = null; // Clear the last transaction ID
+        currentCategory = "all"; // Reset category filter
+        document
+          .querySelectorAll(".category-tab")
+          .forEach((tab) => tab.classList.remove("active"));
+        document
+          .querySelector(".category-tab[onclick=\"filterByCategory('all')\"]")
+          .classList.add("active");
+
+        // Clear search input
+        document.getElementById("searchProduct").value = "";
+        filterProducts(); // Re-display all products
+      }
+
+      function generateTransactionId() {
+        // Generate a simple unique ID for local use
+        return (
+          "TXN-" + Date.now() + "-" + Math.random().toString(36).substr(2, 9)
+        );
+      }
+
+      // Smart product search with auto-add for exact matches
+      // Real-time search on typing with debounce
+      const searchInput = document.getElementById("searchProduct");
+      if (searchInput) {
+        // Real-time search as user types
+        searchInput.addEventListener("input", function (e) {
+          const searchTerm = this.value.trim();
+
+          // Clear previous timeout
+          clearTimeout(searchTimeout);
+
+          if (!searchTerm) {
+            // If search is empty, show all products filtered by current category
+            const products = document.querySelectorAll(".product-item");
+            products.forEach((product) => {
+              const matchesCategory =
+                currentCategory === "all" ||
+                product.dataset.category === currentCategory;
+              product.style.display = matchesCategory ? "block" : "none";
+            });
+            return;
+          }
+
+          // Debounce search - wait 200ms after typing stops to perform search
+          searchTimeout = setTimeout(() => {
+            performSmartSearch(searchTerm, false);
+          }, 200);
+        });
+
+        // Handle Enter key - immediate search and auto-add
+        searchInput.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            const searchTerm = this.value.trim();
+            if (searchTerm) {
+              clearTimeout(searchTimeout);
+              performSmartSearch(searchTerm, true); // true = auto-add mode
+            }
+          }
+        });
+      }
+
+      async function performSmartSearch(query, autoAddMode = false) {
+        try {
+          const lowerQuery = query.toLowerCase().trim();
+
+          // First try to find exact match in current product grid (faster)
+          const allProductsGridItems =
+            document.querySelectorAll(".product-item");
+          let exactMatch = null;
+
+          for (const productItem of allProductsGridItems) {
+            const productId = productItem.dataset.productId;
+            const productGtin = (
+              productItem.dataset.productGtin || ""
+            ).toLowerCase();
+            const productName = (
+              productItem.dataset.productName || ""
+            ).toLowerCase();
+
+            // Check for exact GTIN or ID match
+            if (productGtin === lowerQuery || productId === query) {
+              exactMatch = {
+                id: parseInt(productId),
+                name: productItem.dataset.productName,
+                price: parseFloat(productItem.dataset.productPrice),
+                stock: parseInt(productItem.dataset.productStock),
+                gtin: productItem.dataset.productGtin,
+              };
+              break;
+            }
+          }
+
+          // If exact match found and auto-add mode, add immediately
+          if (exactMatch && autoAddMode) {
+            if (exactMatch.stock <= 0) {
+              showNotification(
+                `❌ Produk ${exactMatch.name} stok habis!`,
+                "warning"
+              );
+              document.getElementById("searchProduct").value = "";
+              document.getElementById("searchProduct").focus();
+              return;
+            }
+
+            const existingItem = cart.find((item) => item.id === exactMatch.id);
+
+            if (existingItem) {
+              if (existingItem.quantity >= exactMatch.stock) {
+                showNotification(
+                  `❌ Stok tidak mencukupi! Stok tersedia: ${exactMatch.stock}`,
+                  "warning"
+                );
+                document.getElementById("searchProduct").value = "";
+                document.getElementById("searchProduct").focus();
+                return;
+              }
+              updateQuantity(exactMatch.id, 1);
+              showNotification(
+                `✓ ${exactMatch.name} qty +1 (Total: ${
+                  existingItem.quantity + 1
+                })`,
+                "success"
+              );
+            } else {
+              addToCart(
+                exactMatch.id,
+                exactMatch.name,
+                exactMatch.price,
+                exactMatch.stock
+              );
+              showNotification(
+                `✓ ${exactMatch.name} ditambahkan ke keranjang`,
+                "success"
+              );
+            }
+
+            document.getElementById("searchProduct").value = "";
+            setTimeout(() => {
+              document.getElementById("searchProduct").focus();
+            }, 100);
+            return;
+          }
+
+          // Fetch products from the API for broader search
+          const response = await fetch(
+            `/api/cashier/products?search=${encodeURIComponent(query)}`
+          );
+          const result = await response.json();
+          console.log("DEBUG API RESULT:", result); // Tambahkan ini
+
+          const products = Array.isArray(result)
+            ? result
+            : result.products || result.data || [];
+
+          console.log("DEBUG PRODUCTS ARRAY:", products); // Tambahkan ini
+
+          // Lanjut ke logika autoAddMode dan displaySearchResults
+
+          // Auto-add mode (Enter pressed) - add first match immediately
+          if (autoAddMode && products.length > 0) {
+            const product = products[0];
+
+            // Check if product is in stock before adding
+            if (product.stock <= 0) {
+              showNotification(
+                `❌ Produk ${product.name} stok habis!`,
+                "warning"
+              );
+              return;
+            }
+
+            // Check if product already in cart
+            const existingItem = cart.find((item) => item.id === product.id);
+
+            if (existingItem) {
+              // If same product, increase quantity
+              if (existingItem.quantity >= product.stock) {
+                showNotification(
+                  `❌ Stok tidak mencukupi! Stok tersedia: ${product.stock}`,
+                  "warning"
+                );
+                return;
+              }
+              updateQuantity(product.id, 1); // Increase by 1
+              showNotification(
+                `✓ ${product.name} qty +1 (Total: ${
+                  existingItem.quantity + 1
+                })`,
+                "success"
+              );
+            } else {
+              // If different product, add new item
+              addToCart(product.id, product.name, product.price, product.stock);
+              showNotification(
+                `✓ ${product.name} ditambahkan ke keranjang`,
+                "success"
+              );
+            }
+
+            // Clear search input after adding
+            document.getElementById("searchProduct").value = "";
+
+            // Focus back to search for next scan
+            setTimeout(() => {
+              document.getElementById("searchProduct").focus();
+            }, 100);
+
+            return;
+          }
+
+          // Check if there's exactly one product and it's an exact match (non auto-add mode)
+          if (products.length === 1 && products[0].exact_match) {
+            const product = products[0];
+
+            // Check if product is in stock before adding
+            if (product.stock <= 0) {
+              showNotification(`Produk ${product.name} stok habis!`, "warning");
+              return;
+            }
+
+            // Auto-add to cart
+            addToCart(product.id, product.name, product.price, product.stock);
+
+            // Clear search input after adding
+            document.getElementById("searchProduct").value = "";
+
+            // Show success notification
+            showNotification(
+              `✓ ${product.name} ditambahkan ke keranjang`,
+              "success"
+            );
+          } else {
+            // If not an exact match, display search results by filtering the existing product grid
+            displaySearchResults(products, query);
+          }
+        } catch (error) {
+          console.error("Search error:", error);
+          showNotification(`Pencarian gagal: ${error.message}`, "danger");
+        }
+      }
+
+      function displaySearchResults(products, query) {
+        const allProductsGridItems = document.querySelectorAll(".product-item");
+        const lowerQuery = query.toLowerCase();
+
+        allProductsGridItems.forEach((productItem) => {
+          const productId = parseInt(productItem.dataset.productId);
+          const matchingProduct = products.find((p) => p.id === productId);
+          const matchesCategory =
+            currentCategory === "all" ||
+            productItem.dataset.category === currentCategory;
+
+          // Show product if it matches search results AND current category filter
+          if (matchingProduct && matchesCategory) {
+            productItem.style.display = "block";
+          } else {
+            productItem.style.display = "none";
+          }
+        });
+      }
+
+      function showNotification(message, type = "info") {
+        // Create a notification element
+        const notification = document.createElement("div");
+        // Use Bootstrap alert classes for styling (assuming Bootstrap is available or similar CSS)
+        notification.className = `alert alert-${type} position-fixed top-0 start-50 translate-middle-x mt-3`;
+        notification.style.zIndex = "9999"; // Ensure it's on top
+        notification.style.minWidth = "300px"; // Minimum width for readability
+        notification.style.textAlign = "center"; // Center align text
+
+        notification.innerHTML = `
+                <i class="fas fa-${
+                  type === "success"
+                    ? "check-circle"
+                    : type === "warning"
+                    ? "exclamation-triangle"
+                    : "info-circle"
+                } me-2"></i>
+                ${message}
+            `;
+
+        document.body.appendChild(notification);
+
+        // Remove notification after a few seconds
+        setTimeout(() => {
+          notification.remove();
+        }, 3000); // Display for 3 seconds
+      }
+
+      function filterByCategory(categoryId) {
+        currentCategory = categoryId;
+
+        // Update active tab styling
+        document
+          .querySelectorAll(".category-tab")
+          .forEach((tab) => tab.classList.remove("active"));
+        event.target.classList.add("active");
+
+        // Re-apply the search filter or show all if search is empty
+        filterProducts();
+      }
+    </script>
+  </body>
+</html>

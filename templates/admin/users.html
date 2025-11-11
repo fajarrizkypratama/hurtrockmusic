@@ -1,0 +1,239 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Kelola User - Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Kelola User</h2>
+    <div class="d-flex align-items-center gap-3">
+        <div class="badge bg-info fs-6 px-3 py-2">{{ users|length }} Total User</div>
+        <a href="{{ url_for('admin_add_user') }}" class="btn btn-orange">
+            <svg class="admin-svg-icon me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2" fill="none"/>
+            <path d="M1 21V19C1 16.8 2.8 15 5 15H13C15.2 15 17 16.8 17 19V21" stroke="currentColor" stroke-width="2" fill="none"/>
+            <path d="M20 8V14M17 11H23" stroke="currentColor" stroke-width="2"/>
+        </svg>Tambah User
+    </a>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nama</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Terdaftar</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.name }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'danger' if user.is_admin else ('warning' if user.is_staff else 'primary') }}">
+                                {% if user.is_admin %}Admin{% elif user.is_staff %}Staff{% else %}Buyer{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if user.active else 'secondary' }}">
+                                {{ 'Aktif' if user.active else 'Nonaktif' }}
+                            </span>
+                        </td>
+                        <td>{{ user.created_at.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            {% if user.id != current_user.id %}
+                            <div class="btn-group" role="group">
+                                <!-- Change Role Dropdown -->
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-user-tag me-1"></i>Role
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        {% for role in ['admin', 'staff', 'buyer'] %}
+                                        {% if user.role != role %}
+                                        <li>
+                                            <form method="POST" action="{{ url_for('admin_change_user_role', user_id=user.id) }}" class="d-inline">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                <input type="hidden" name="role" value="{{ role }}">
+                                                <button type="submit" class="dropdown-item" 
+                                                        onclick="return confirm('Yakin ingin mengubah role {{ user.name }} menjadi {{ role }}?')">
+                                                    <i class="fas fa-{{ 'shield-alt' if role == 'admin' else 'user-tie' if role == 'staff' else 'user' }} me-2"></i>{{ role.title() }}
+                                                </button>
+                                            </form>
+                                        </li>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+
+                                <!-- Reset Password Button -->
+                                <button class="btn btn-sm btn-outline-warning" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#resetPasswordModal{{ user.id }}"
+                                        title="Reset Password">
+                                    <i class="fas fa-key"></i>
+                                </button>
+
+                                <!-- Delete User Button -->
+                                {% if not user.orders %}
+                                <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                            onclick="return confirm('PERINGATAN: Aksi ini tidak dapat dibatalkan!\n\nYakin ingin menghapus user {{ user.name }}?')"
+                                            title="Hapus User">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                                {% else %}
+                                <button class="btn btn-sm btn-outline-secondary disabled" 
+                                        title="Tidak bisa dihapus - User memiliki riwayat pesanan">
+                                    <i class="fas fa-lock"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <span class="badge bg-success">
+                                <i class="fas fa-user-shield me-1"></i>Akun Sendiri
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-danger">
+            <div class="card-body">
+                <h5>{{ users | selectattr('role', 'equalto', 'admin') | list | length }}</h5>
+                <p class="mb-0">Admin</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h5>{{ users | selectattr('role', 'equalto', 'staff') | list | length }}</h5>
+                <p class="mb-0">Staff</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5>{{ users | selectattr('role', 'equalto', 'buyer') | list | length }}</h5>
+                <p class="mb-0">Buyer</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Password Modals -->
+{% for user in users %}
+{% if user.id != current_user.id %}
+<div class="modal fade" id="resetPasswordModal{{ user.id }}" tabindex="-1" aria-labelledby="resetPasswordModalLabel{{ user.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="resetPasswordModalLabel{{ user.id }}">
+                    <i class="fas fa-key me-2"></i>Reset Password - {{ user.name }}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin_reset_password', user_id=user.id) }}">
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Anda akan mereset password untuk user <strong>{{ user.name }}</strong> ({{ user.email }})
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="newPassword{{ user.id }}" class="form-label">
+                            <i class="fas fa-lock me-1"></i>Password Baru
+                        </label>
+                        <input type="password" class="form-control" id="newPassword{{ user.id }}" name="new_password" required minlength="6" placeholder="Masukkan password baru">
+                        <small class="form-text text-muted">Minimal 6 karakter</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="confirmPassword{{ user.id }}" class="form-label">
+                            <i class="fas fa-lock me-1"></i>Konfirmasi Password
+                        </label>
+                        <input type="password" class="form-control" id="confirmPassword{{ user.id }}" required minlength="6" placeholder="Ulangi password baru">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Batal
+                    </button>
+                    <button type="submit" class="btn btn-warning" onclick="return validatePasswordReset({{ user.id }})">
+                        <i class="fas fa-key me-1"></i>Reset Password
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function validatePasswordReset(userId) {
+    const newPassword = document.getElementById('newPassword' + userId).value;
+    const confirmPassword = document.getElementById('confirmPassword' + userId).value;
+
+    if (newPassword.length < 6) {
+        alert('Password harus minimal 6 karakter!');
+        return false;
+    }
+
+    if (newPassword !== confirmPassword) {
+        alert('Password dan konfirmasi password tidak sama!');
+        return false;
+    }
+
+    return confirm('Yakin ingin mereset password user ini?');
+}
+
+// Auto generate strong password
+function generateStrongPassword(userId) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < 8; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    document.getElementById('newPassword' + userId).value = password;
+    document.getElementById('confirmPassword' + userId).value = password;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click handlers for password generation
+    document.querySelectorAll('[id^="newPassword"]').forEach(function(input) {
+        const userId = input.id.replace('newPassword', '');
+        input.addEventListener('dblclick', function() {
+            if (confirm('Generate password otomatis? (Klik double pada field untuk generate)')) {
+                generateStrongPassword(userId);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
